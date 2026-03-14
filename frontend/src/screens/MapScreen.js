@@ -4,11 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 
-const POIS = [
-    { id: '1', title: 'Phở Lệ', type: 'Phở', desc: '123 Vĩnh Khánh, P.10, Q.4', status: 'Đang mở cửa', lat: 10.7600, lng: 106.7000 },
-    { id: '2', title: 'Bánh Mì Huynh Hoa', type: 'Bánh Mì', desc: '187 Vĩnh Khánh, P.10, Q.4', status: 'Sắp mở cửa', lat: 10.7620, lng: 106.7020 },
-    { id: '3', title: 'Cà Phê Sài Gòn', type: 'Cà Phê', desc: '256 Vĩnh Khánh, P.10, Q.4', status: 'Đang mở cửa', lat: 10.7580, lng: 106.6980 },
-];
+import { POIS } from '../data/mockData';
 
 const MapScreen = () => {
     const [selectedPoi, setSelectedPoi] = useState(null);
