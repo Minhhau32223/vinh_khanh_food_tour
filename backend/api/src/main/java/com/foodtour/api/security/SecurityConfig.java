@@ -47,10 +47,18 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // Auth routes: public
                 .requestMatchers("/api/auth/**").permitAll()
+                // User management: ADMIN only
                 .requestMatchers(HttpMethod.GET, "/api/users/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/users/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PATCH, "/api/users/**").hasRole("ADMIN")
+                // POI read: any authenticated user
+                .requestMatchers(HttpMethod.GET, "/api/pois/**").authenticated()
+                // POI write: ADMIN only (also enforced by @PreAuthorize on controller)
+                .requestMatchers(HttpMethod.POST, "/api/pois/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/pois/**").hasRole("ADMIN")
+                // All other requests: authenticated
                 .anyRequest().authenticated()
             );
 
