@@ -49,16 +49,24 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Auth routes: public
                 .requestMatchers("/api/auth/**").permitAll()
-                // User management: ADMIN only
+                // Session: public (khách vãng lai không cần đăng nhập)
+                .requestMatchers("/api/sessions/**").permitAll()
+                // Analytic: public
+                .requestMatchers("/api/analytics/**").permitAll()
+                // Poi Conent: Admin only
+                .requestMatchers(HttpMethod.POST, "/api/poi-contents/**").hasRole("ADMIN")
+//                .requestMatchers(HttpMethod.POST, "/api/sessions").permitAll()
+//                    .requestMatchers(HttpMethod.GET, "/api/sessions/**").permitAll()
+                // User management: ADMIN only (chỉ ADMIN mới được xem/tạo/sửa user)
                 .requestMatchers(HttpMethod.GET, "/api/users/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/users/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PATCH, "/api/users/**").hasRole("ADMIN")
-                // POI read: any authenticated user
+                // POI read: any authenticated user (đã đăng nhập mới được xem (dù là admin hay user thường))
                 .requestMatchers(HttpMethod.GET, "/api/pois/**").authenticated()
-                // POI write: ADMIN only (also enforced by @PreAuthorize on controller)
+                // POI write: ADMIN only (also enforced by @PreAuthorize on controller) (chỉ ADMIN mới được tạo/sửa)
                 .requestMatchers(HttpMethod.POST, "/api/pois/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/pois/**").hasRole("ADMIN")
-                // All other requests: authenticated
+                // All other requests: authenticated (Tất cả API còn lại: phải đăng nhập (không cần role cụ thể))
                 .anyRequest().authenticated()
             );
 
