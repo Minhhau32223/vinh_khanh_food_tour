@@ -52,7 +52,7 @@ public class PoiController {
     }
 
     /**
-     * API 3: ⭐ GEOFENCE — Tìm POI gần vị trí hiện tại.
+     * API 3:  GEOFENCE — Tìm POI gần vị trí hiện tại.
      * GET /api/pois/nearby?lat=10.7769&lng=106.6952&radius=1.0
      *
      * @param lat    Vĩ độ của người dùng (bắt buộc)
