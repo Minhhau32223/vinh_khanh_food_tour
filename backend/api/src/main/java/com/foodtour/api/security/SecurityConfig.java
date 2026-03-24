@@ -56,6 +56,7 @@ public class SecurityConfig {
                 // POI read: any authenticated user
                 .requestMatchers(HttpMethod.GET, "/api/pois/**").authenticated()
                 // POI write: ADMIN only (also enforced by @PreAuthorize on controller)
+
                 .requestMatchers(HttpMethod.POST, "/api/pois/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/pois/**").hasRole("ADMIN")
                 // All other requests: authenticated

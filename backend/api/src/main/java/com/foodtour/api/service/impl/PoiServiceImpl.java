@@ -120,6 +120,15 @@ public class PoiServiceImpl implements PoiService {
         return mapToResponse(poiRepository.save(poi), null);
     }
 
+    @Override
+    public Boolean updateStutus(Long id) {
+        Poi poi = poiRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("POI not found with id: " + id));
+        poi.setIsActive(!poi.getIsActive());
+        poiRepository.save(poi);
+        return Boolean.TRUE;
+    }
+
     // ─────────────────────────────────────────────────────
     // CÔNG THỨC HAVERSINE
     // Tính khoảng cách km giữa 2 tọa độ (lat1,lng1) và (lat2,lng2)

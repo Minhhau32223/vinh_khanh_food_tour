@@ -1,7 +1,11 @@
 package com.foodtour.api.controller;
 
+import com.foodtour.api.dto.PoiContentsRequest;
+import com.foodtour.api.dto.PoiContentsResponse;
 import com.foodtour.api.dto.PoiRequest;
 import com.foodtour.api.dto.PoiResponse;
+import com.foodtour.api.entity.PoiContents;
+import com.foodtour.api.service.PoiContentsService;
 import com.foodtour.api.service.PoiService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +32,7 @@ import java.util.List;
 public class PoiController {
 
     private final PoiService poiService;
+    private final PoiContentsService poiContentsService;
 
     /**
      * API 1: Lấy danh sách tất cả POI đang active.
@@ -50,6 +55,7 @@ public class PoiController {
     public ResponseEntity<PoiResponse> getPoiById(@PathVariable Long id) {
         return ResponseEntity.ok(poiService.getPoiById(id));
     }
+
 
     /**
      * API 3: ⭐ GEOFENCE — Tìm POI gần vị trí hiện tại.
@@ -101,4 +107,44 @@ public class PoiController {
             @RequestBody PoiRequest request) {
         return ResponseEntity.ok(poiService.updatePoi(id, request));
     }
+    /**
+     * API 5: Cập nhật Status Poi (chỉ ADMIN).
+     * PATCH /api/pois/{id}/status
+     * Header: Authorization: Bearer <token>
+     *
+     * Chỉ cần gửi những field muốn thay đổi.
+     * Response: PoiResponse đã được cập nhật
+     */
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Boolean> updatePoiStatus(@PathVariable Long id) {
+        return ResponseEntity.ok(poiService.updateStutus(id));
+    }
+
+
+    @PostMapping("/{id}/content")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<PoiContentsResponse>> createPoiContent(
+            @PathVariable Long id,
+            @RequestBody PoiContentsRequest request
+    ) throws Exception {
+        // Lấy danh sách các nội dung POI từ service
+        List<PoiContentsResponse> responses = poiContentsService.createPoiContents(id, request);
+
+        // Trả về ResponseEntity với HTTP 200 và body là list
+        return ResponseEntity.ok(responses);
+    }
+
+
+
+    @GetMapping("/{id}/content/{language}")
+    public ResponseEntity<PoiContentsResponse> getPoiContentsByIdLanguage(
+            @PathVariable Long id,
+            @PathVariable String language
+    ) throws Exception {
+        return ResponseEntity.ok(poiContentsService.getPoiContentsByIdLanguage(id, language));
+    }
+
+
+
 }
