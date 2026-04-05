@@ -8,5 +8,7 @@ public class LogPlayHistoryRequest {
     private Long poiId;
     private Long poiContentId;
     private String triggerType;
+    /** vi | en | zh (hoặc mã ngôn ngữ backend) */
+    private String language;
     private Integer durationSeconds;
 }

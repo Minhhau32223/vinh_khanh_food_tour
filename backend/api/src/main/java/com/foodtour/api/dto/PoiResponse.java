@@ -22,6 +22,7 @@ public class PoiResponse {
     private Integer triggerRadius;
     private Integer priority;
     private Boolean isActive;
+    private String status;
     private Long ownerId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

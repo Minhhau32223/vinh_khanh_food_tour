@@ -48,6 +48,9 @@ public class SessionServiceImpl implements SessionService {
         if (request.getPreferredLanguage() != null) {
             session.setPreferredLanguage(request.getPreferredLanguage());
         }
+        if (Boolean.TRUE.equals(request.getPatchTour())) {
+            session.setCurrentTourId(request.getCurrentTourId());
+        }
         sessionRepository.save(session);
         return mapToResponse(session);
     }

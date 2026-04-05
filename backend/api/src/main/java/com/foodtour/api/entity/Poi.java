@@ -57,6 +57,11 @@ public class Poi {
     @Builder.Default
     private Boolean isActive = true;
 
+    // Trạng thái duyệt POI: PENDING | APPROVED
+    @Column(name = "status", length = 20)
+    @Builder.Default
+    private String status = "PENDING";
+
     // FK tới bảng users (owner/chủ quán). Nullable vì POI có thể không có owner
     @Column(name = "owner_id")
     private Long ownerId;

@@ -3,6 +3,8 @@ package com.foodtour.api.dto.Tour;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class UpdateTourRequest {
 
@@ -14,4 +16,6 @@ public class UpdateTourRequest {
 
     private Boolean isSystem;
     private Boolean isActive;
+
+    private List<TourPoiOrderRequest> pois;
 }

@@ -4,8 +4,13 @@ import com.foodtour.api.dto.PoiRequest;
 import com.foodtour.api.dto.PoiResponse;
 import com.foodtour.api.entity.Poi;
 import com.foodtour.api.repository.PoiRepository;
+import com.foodtour.api.security.CustomUserDetails;
+import com.foodtour.api.service.PoiContentsService;
 import com.foodtour.api.service.PoiService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -31,15 +36,31 @@ import java.util.stream.Collectors;
 public class PoiServiceImpl implements PoiService {
 
     private final PoiRepository poiRepository;
+    private final PoiContentsService poiContentsService;
 
     // Bán kính Trái Đất tính bằng km (dùng cho Haversine)
     private static final double EARTH_RADIUS_KM = 6371.0;
 
     @Override
     public List<PoiResponse> getAllPois() {
-        // Lấy tất cả POI active, map sang PoiResponse (distanceKm = null)
-        return poiRepository.findByIsActiveTrue()
-                .stream()
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return poiRepository.findByIsActiveTrueAndStatus("APPROVED").stream()
+                    .map(poi -> mapToResponse(poi, null))
+                    .collect(Collectors.toList());
+        }
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+        if ("ADMIN".equals(userDetails.getUser().getRole())) {
+            return poiRepository.findAll().stream()
+                    .map(poi -> mapToResponse(poi, null))
+                    .collect(Collectors.toList());
+        }
+        if ("OWNER".equals(userDetails.getUser().getRole())) {
+            return poiRepository.findByOwnerId(userDetails.getUser().getId()).stream()
+                    .map(poi -> mapToResponse(poi, null))
+                    .collect(Collectors.toList());
+        }
+        return poiRepository.findByIsActiveTrueAndStatus("APPROVED").stream()
                 .map(poi -> mapToResponse(poi, null))
                 .collect(Collectors.toList());
     }
@@ -89,14 +110,18 @@ public class PoiServiceImpl implements PoiService {
 
     @Override
     public PoiResponse createPoi(PoiRequest request) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+        boolean isAdmin = "ADMIN".equals(userDetails.getUser().getRole());
         Poi poi = Poi.builder()
                 .name(request.getName())
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
                 .triggerRadius(request.getTriggerRadius() != null ? request.getTriggerRadius() : 50)
                 .priority(request.getPriority() != null ? request.getPriority() : 0)
-                .isActive(request.getIsActive() != null ? request.getIsActive() : true)
-                .ownerId(request.getOwnerId())
+                .isActive(isAdmin ? (request.getIsActive() != null ? request.getIsActive() : true) : false)
+                .status(isAdmin ? "APPROVED" : "PENDING")
+                .ownerId(isAdmin ? request.getOwnerId() : userDetails.getUser().getId())
                 .build();
 
         return mapToResponse(poiRepository.save(poi), null);
@@ -104,20 +129,49 @@ public class PoiServiceImpl implements PoiService {
 
     @Override
     public PoiResponse updatePoi(Long id, PoiRequest request) {
-        // Tìm POI cần update, nếu không có → báo lỗi 404
         Poi poi = poiRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("POI not found with id: " + id));
 
-        // Cập nhật từng field (chỉ update field được gửi lên)
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+        boolean isAdmin = "ADMIN".equals(userDetails.getUser().getRole());
+        if (!isAdmin && !userDetails.getUser().getId().equals(poi.getOwnerId())) {
+            throw new AccessDeniedException("Owner can only edit own POI");
+        }
+
         if (request.getName() != null) poi.setName(request.getName());
         if (request.getLatitude() != null) poi.setLatitude(request.getLatitude());
         if (request.getLongitude() != null) poi.setLongitude(request.getLongitude());
         if (request.getTriggerRadius() != null) poi.setTriggerRadius(request.getTriggerRadius());
         if (request.getPriority() != null) poi.setPriority(request.getPriority());
-        if (request.getIsActive() != null) poi.setIsActive(request.getIsActive());
-        if (request.getOwnerId() != null) poi.setOwnerId(request.getOwnerId());
+        if (isAdmin && request.getIsActive() != null) poi.setIsActive(request.getIsActive());
+        if (isAdmin && request.getOwnerId() != null) poi.setOwnerId(request.getOwnerId());
 
         return mapToResponse(poiRepository.save(poi), null);
+    }
+
+    @Override
+    public Boolean updateStutus(Long id) {
+        Poi poi = poiRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("POI not found with id: " + id));
+        poi.setIsActive(!poi.getIsActive());
+        poiRepository.save(poi);
+        return Boolean.TRUE;
+    }
+
+    @Override
+    public PoiResponse approvePoi(Long id) {
+        Poi poi = poiRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("POI not found with id: " + id));
+        poi.setStatus("APPROVED");
+        poi.setIsActive(true);
+        Poi saved = poiRepository.save(poi);
+        try {
+            poiContentsService.translateAndGenerateForPoi(id);
+        } catch (Exception e) {
+            throw new RuntimeException("POI approved but translate/audio failed: " + e.getMessage(), e);
+        }
+        return mapToResponse(saved, null);
     }
 
     // ─────────────────────────────────────────────────────
@@ -158,6 +212,7 @@ public class PoiServiceImpl implements PoiService {
                 .triggerRadius(poi.getTriggerRadius())
                 .priority(poi.getPriority())
                 .isActive(poi.getIsActive())
+                .status(poi.getStatus())
                 .ownerId(poi.getOwnerId())
                 .createdAt(poi.getCreatedAt())
                 .updatedAt(poi.getUpdatedAt())

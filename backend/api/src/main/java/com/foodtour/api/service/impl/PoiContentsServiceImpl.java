@@ -1,0 +1,236 @@
+package com.foodtour.api.service.impl;
+
+import com.foodtour.api.dto.PoiContentsRequest;
+import com.foodtour.api.dto.PoiContentsResponse;
+import com.foodtour.api.entity.Poi;
+import com.foodtour.api.entity.PoiContents;
+import com.foodtour.api.repository.PoiContentRepository;
+import com.foodtour.api.repository.PoiRepository;
+import com.foodtour.api.security.CustomUserDetails;
+import com.foodtour.api.service.AudioService;
+import com.foodtour.api.service.PoiContentsService;
+import com.foodtour.api.service.TranslationService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class PoiContentsServiceImpl implements PoiContentsService {
+    private static final List<String> SUPPORTED_LANGUAGES = List.of(
+            "vi", "en", "fr", "de", "ja", "ko", "zh-CN", "es", "ru", "it", "pt", "th", "ar", "tr", "id"
+    );
+
+    private final PoiContentRepository poiContentRepository;
+    private final TranslationService translationService;
+    private final PoiRepository poiRepository;
+    private final AudioService audioService;
+    // Danh sách ngôn ngữ: vi + 15 ngôn ngữ khác
+    private final List<String> langs = List.of(
+            "en","fr","de","ja","ko","zh-CN","es","ru","it","pt","th","ar","tr","id"
+    );
+
+    @Override
+    public List<PoiContentsResponse> createPoiContents(Long poiId, PoiContentsRequest request) throws Exception {
+
+        Poi poi = poiRepository.findById(poiId)
+                .orElseThrow(() -> new RuntimeException("POI not found"));
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+            String role = userDetails.getUser().getRole();
+            if ("OWNER".equals(role) && !userDetails.getUser().getId().equals(poi.getOwnerId())) {
+                throw new AccessDeniedException("Owner can only update content of own POI");
+            }
+        }
+
+        List<PoiContents> results = new ArrayList<>();
+
+        String separator = "###SPLIT###";
+        String imageUrls = request.getImageUrls();
+
+        // ===== 1. LƯU TIẾNG VIỆT =====
+        PoiContents viContent = poiContentRepository.findByPoiIdAndLanguageCode(poiId, "vi")
+                .orElseGet(() -> PoiContents.builder()
+                        .poi(poi)
+                        .languageCode("vi")
+                        .build());
+
+        viContent.setPoi(poi);
+        viContent.setLanguageCode("vi");
+        viContent.setTitle(request.getTitle());
+        viContent.setDescription(request.getDescription());
+        viContent.setTtsScript(request.getTtsScript());
+        viContent.setImageUrls(imageUrls);
+        viContent.setAudioFileUrl(hasText(request.getAudioFileUrl())
+                ? request.getAudioFileUrl().trim()
+                : audioService.createAudioFile(request.getTtsScript(), "vi", poiId.toString()));
+
+        results.add(viContent);
+
+        // POI chờ duyệt: chỉ lưu tiếng Việt, chưa dịch và chưa tạo đa ngôn ngữ.
+        if (!"APPROVED".equals(poi.getStatus())) {
+            return contentsResponse(poiContentRepository.saveAll(results));
+        }
+
+        // ===== 2. CHUẨN BỊ DỊCH =====
+        String combined = request.getTitle() + separator
+                + request.getDescription() + separator
+                + request.getTtsScript();
+
+        List<String> targetLangs = SUPPORTED_LANGUAGES.stream()
+                .filter(lang -> !"vi".equals(lang))
+                .toList();
+
+        Map<String, String> translations =
+                translationService.translate(combined, targetLangs);
+
+        // ===== 3. TẠO CÁC NGÔN NGỮ KHÁC =====
+        Map<String, PoiContents> existingByLang = poiContentRepository.findByPoiId(poiId).stream()
+                .collect(Collectors.toMap(PoiContents::getLanguageCode, content -> content, (left, right) -> left));
+        for (String lang : targetLangs) {
+
+            // bỏ qua nếu đã có
+//            if (poiContentRepository.findByPoiIdAndLanguageCode(poiId, lang).isPresent()) {
+//                continue;
+//            }
+            String translated = translations != null ? translations.get(lang) : null;
+
+            if (translated == null || !translated.contains(separator)) {
+                translated = combined;
+            }
+
+            String[] parts = translated.split(separator);
+
+            if (parts.length < 3) {
+                continue;
+            }
+
+            String title = parts[0];
+            String description = parts[1];
+            String script = parts[2];
+
+            String audioUrl = audioService.createAudioFile(
+                    script,
+                    lang,
+                    poiId.toString()
+            );
+
+            PoiContents content = existingByLang.getOrDefault(lang, PoiContents.builder()
+                    .poi(poi)
+                    .languageCode(lang)
+                    .build());
+            content.setPoi(poi);
+            content.setLanguageCode(lang);
+            content.setTitle(title);
+            content.setDescription(description);
+            content.setTtsScript(script);
+            content.setImageUrls(imageUrls);
+            content.setAudioFileUrl(audioUrl);
+
+            results.add(content);
+        }
+
+        return contentsResponse(poiContentRepository.saveAll(results));
+    }
+
+    @Override
+    public void translateAndGenerateForPoi(Long poiId) throws Exception {
+        Poi poi = poiRepository.findById(poiId)
+                .orElseThrow(() -> new RuntimeException("POI not found"));
+        PoiContents viContent = poiContentRepository.findByPoiIdAndLanguageCode(poiId, "vi")
+                .orElseThrow(() -> new RuntimeException("Vietnamese content is required before approval"));
+
+        String separator = "###SPLIT###";
+        String combined = viContent.getTitle() + separator + viContent.getDescription() + separator + viContent.getTtsScript();
+        List<String> targetLangs = SUPPORTED_LANGUAGES.stream().filter(lang -> !"vi".equals(lang)).toList();
+        Map<String, String> translations = translationService.translate(combined, targetLangs);
+
+        Map<String, PoiContents> existingByLang = poiContentRepository.findByPoiId(poiId).stream()
+                .collect(Collectors.toMap(PoiContents::getLanguageCode, content -> content, (left, right) -> left));
+        List<PoiContents> created = new ArrayList<>();
+
+        for (String lang : targetLangs) {
+            String translated = translations != null ? translations.get(lang) : null;
+            if (translated == null || !translated.contains(separator)) translated = combined;
+            String[] parts = translated.split(separator);
+            if (parts.length < 3) continue;
+
+            String audioUrl = audioService.createAudioFile(parts[2], lang, poiId.toString());
+            PoiContents content = existingByLang.getOrDefault(lang, PoiContents.builder()
+                    .poi(poi)
+                    .languageCode(lang)
+                    .build());
+            content.setPoi(poi);
+            content.setLanguageCode(lang);
+            content.setTitle(parts[0]);
+            content.setDescription(parts[1]);
+            content.setTtsScript(parts[2]);
+            content.setImageUrls(viContent.getImageUrls());
+            content.setAudioFileUrl(audioUrl);
+            created.add(content);
+        }
+
+        if (!created.isEmpty()) {
+            poiContentRepository.saveAll(created);
+        }
+    }
+
+
+
+    @Override
+    public PoiContentsResponse getPoiContentsByIdLanguage(Long id, String language) {
+
+        return poiContentRepository.findByPoiIdAndLanguageCode(id,language)
+                .map( poiContents -> contentsResponse(poiContents))
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nội dung POI với id: " + id + " và ngôn ngữ: " + language));
+    }
+
+    @Override
+    public List<PoiContentsResponse> getPoiContents(Long poiId) {
+        return poiContentRepository.findByPoiId(poiId).stream()
+                .sorted(Comparator.comparingInt(content -> {
+                    int idx = SUPPORTED_LANGUAGES.indexOf(content.getLanguageCode());
+                    return idx >= 0 ? idx : Integer.MAX_VALUE;
+                }))
+                .map(this::contentsResponse)
+                .toList();
+    }
+
+    @Override
+    public List<String> getSupportedLanguages() {
+        return SUPPORTED_LANGUAGES;
+    }
+
+    private List<PoiContentsResponse> contentsResponse(List<PoiContents> contentsList){
+        return contentsList.stream().map(this::contentsResponse).toList();
+    }
+
+    private PoiContentsResponse contentsResponse(PoiContents poiContents) {
+        return PoiContentsResponse.builder()
+                .id(poiContents.getId())
+                .poiId(poiContents.getPoi().getId())
+                .title(poiContents.getTitle())
+                .description(poiContents.getDescription())
+                .audioFileUrl(poiContents.getAudioFileUrl())
+                .languageCode(poiContents.getLanguageCode())
+                .imageUrls(poiContents.getImageUrls())
+                .ttsScript(poiContents.getTtsScript())
+                .createdAt(poiContents.getCreatedAt())
+                .updatedAt(poiContents.getUpdatedAt())
+                .build();
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+}

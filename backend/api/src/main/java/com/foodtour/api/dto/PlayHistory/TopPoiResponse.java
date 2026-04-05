@@ -12,6 +12,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TopPoiResponse {
+    private Long poiId;
+    private String poiName;
+    /** Trung bình thời lượng nghe (giây), null nếu chưa có bản ghi duration. */
+    private Double avgDurationSeconds;
     private PoiResponse poi;
     private Long playCount;
 }

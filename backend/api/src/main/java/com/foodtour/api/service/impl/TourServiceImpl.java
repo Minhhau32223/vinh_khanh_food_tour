@@ -1,13 +1,18 @@
 package com.foodtour.api.service.impl;
 
 import com.foodtour.api.dto.Tour.*;
+import com.foodtour.api.entity.Poi;
 import com.foodtour.api.entity.Tour;
+import com.foodtour.api.entity.Tour_Pois;
+import com.foodtour.api.repository.PoiRepository;
 import com.foodtour.api.repository.TourRepository;
 import com.foodtour.api.repository.Tour_PoisRepository;
 import com.foodtour.api.service.TourService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,32 +21,35 @@ import java.util.stream.Collectors;
 public class TourServiceImpl implements TourService {
     private final TourRepository tourRepository;
     private final Tour_PoisRepository tourPOIRepository;
+    private final PoiRepository poiRepository;
 
     @Override
     public List<TourResponse> getAllTours() {
         return tourRepository.findByIsActiveTrue()
                 .stream()
-                .map(tour -> mapToResponse(tour))
+                .map(this::mapToResponseWithPois)
                 .collect(Collectors.toList());
-
     }
 
     @Override
+    @Transactional
     public TourResponse createTour(CreateTourRequest request) {
         Tour tour = Tour.builder()
                 .name(request.getName())
                 .description(request.getDescription())
-                .isSystem(request.getIsSystem())
+                .isSystem(request.getIsSystem() != null ? request.getIsSystem() : true)
                 .createdBy(request.getCreatedBy())
+                .isActive(true)
                 .build();
 
-        tourRepository.save(tour);
-        return mapToResponse(tour);
+        Tour saved = tourRepository.save(tour);
+        replaceTourPois(saved.getId(), request.getPois());
+        return mapToResponseWithPois(saved);
     }
 
     @Override
+    @Transactional
     public TourResponse updateTour(Long id, UpdateTourRequest request) {
-
         Tour tour = tourRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tour not found"));
 
@@ -56,21 +64,54 @@ public class TourServiceImpl implements TourService {
             tour.setIsActive(request.getIsActive());
         }
 
-        return mapToResponse(tourRepository.save(tour));
+        Tour saved = tourRepository.save(tour);
+        if (request.getPois() != null) {
+            replaceTourPois(id, request.getPois());
+        }
+        return mapToResponseWithPois(saved);
     }
 
     @Override
     public void deleteTour(Long id) {
         Tour tour = tourRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tour not found"));
-
-        tourRepository.delete(tour);
+        tour.setIsActive(false);
+        tourRepository.save(tour);
     }
 
-    private TourResponse mapToResponse(Tour tour) {
-        if (tour == null) {
-            return null;
+    private void replaceTourPois(Long tourId, List<TourPoiOrderRequest> pois) {
+        if (pois == null) {
+            return;
         }
+        tourPOIRepository.deleteByTourId(tourId);
+        int idx = 0;
+        List<Tour_Pois> rows = new ArrayList<>();
+        for (TourPoiOrderRequest item : pois) {
+            idx++;
+            int order = item.getOrderIndex() != null ? item.getOrderIndex() : idx;
+            rows.add(Tour_Pois.builder()
+                    .tourId(tourId)
+                    .poiId(item.getPoiId())
+                    .orderIndex(order)
+                    .build());
+        }
+        tourPOIRepository.saveAll(rows);
+    }
+
+    private TourResponse mapToResponseWithPois(Tour tour) {
+        List<Tour_PoisResponse> pois = tourPOIRepository.findByTourIdOrderByOrderIndexAsc(tour.getId())
+                .stream()
+                .map(tp -> {
+                    String name = poiRepository.findById(tp.getPoiId())
+                            .map(Poi::getName)
+                            .orElse("POI #" + tp.getPoiId());
+                    return Tour_PoisResponse.builder()
+                            .poiId(tp.getPoiId())
+                            .orderIndex(tp.getOrderIndex())
+                            .poiName(name)
+                            .build();
+                })
+                .toList();
 
         return TourResponse.builder()
                 .id(tour.getId())
@@ -81,27 +122,30 @@ public class TourServiceImpl implements TourService {
                 .isActive(tour.getIsActive())
                 .createdAt(tour.getCreatedAt())
                 .updatedAt(tour.getUpdatedAt())
+                .pois(pois)
                 .build();
     }
 
     @Override
     public TourDetailResponse getTourById(Long id) {
-
-        // 1. Lấy tour
         Tour tour = tourRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tour not found"));
 
-        // 2. Lấy danh sách POI theo order
         List<Tour_PoisResponse> pois = tourPOIRepository
                 .findByTourIdOrderByOrderIndexAsc(id)
                 .stream()
-                .map(tp -> Tour_PoisResponse.builder()
-                        .poiId(tp.getPoiId())
-                        .orderIndex(tp.getOrderIndex())
-                        .build())
+                .map(tp -> {
+                    String name = poiRepository.findById(tp.getPoiId())
+                            .map(Poi::getName)
+                            .orElse("POI #" + tp.getPoiId());
+                    return Tour_PoisResponse.builder()
+                            .poiId(tp.getPoiId())
+                            .orderIndex(tp.getOrderIndex())
+                            .poiName(name)
+                            .build();
+                })
                 .toList();
 
-        // 3. Trả response
         return TourDetailResponse.builder()
                 .id(tour.getId())
                 .name(tour.getName())

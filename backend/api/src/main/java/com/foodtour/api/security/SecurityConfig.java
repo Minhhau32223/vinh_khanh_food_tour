@@ -49,24 +49,35 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Auth routes: public
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/audio/**", "/img/**").permitAll()
                 // Session: public (khách vãng lai không cần đăng nhập)
                 .requestMatchers("/api/sessions/**").permitAll()
-                // Analytic: public
+                .requestMatchers(HttpMethod.GET, "/api/analytics/dashboard").hasRole("ADMIN")
+                // Analytics: public (guest log play events + top POI)
                 .requestMatchers("/api/analytics/**").permitAll()
-                // Poi Conent: Admin only
-                .requestMatchers(HttpMethod.POST, "/api/poi-contents/**").hasRole("ADMIN")
-//                .requestMatchers(HttpMethod.POST, "/api/sessions").permitAll()
-//                    .requestMatchers(HttpMethod.GET, "/api/sessions/**").permitAll()
-                // User management: ADMIN only (chỉ ADMIN mới được xem/tạo/sửa user)
+                // POI read: PUBLIC (guest web + mobile không cần đăng nhập)
+                .requestMatchers(HttpMethod.GET, "/api/pois/**").permitAll()
+                // Tour read: PUBLIC (guest web xem tour list)
+                .requestMatchers(HttpMethod.GET, "/api/tours/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/qr/admin/**").hasAnyRole("ADMIN", "OWNER")
+                // QR lookup: PUBLIC (guest scan QR không cần đăng nhập)
+                .requestMatchers(HttpMethod.GET, "/api/qr/**").permitAll()
+                // User management: ADMIN only
                 .requestMatchers(HttpMethod.GET, "/api/users/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/users/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PATCH, "/api/users/**").hasRole("ADMIN")
-                // POI read: any authenticated user (đã đăng nhập mới được xem (dù là admin hay user thường))
-                .requestMatchers(HttpMethod.GET, "/api/pois/**").authenticated()
-                // POI write: ADMIN only (also enforced by @PreAuthorize on controller) (chỉ ADMIN mới được tạo/sửa)
-                .requestMatchers(HttpMethod.POST, "/api/pois/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/pois/**").hasRole("ADMIN")
-                // All other requests: authenticated (Tất cả API còn lại: phải đăng nhập (không cần role cụ thể))
+                // POI write: ADMIN only
+                .requestMatchers(HttpMethod.POST, "/api/pois/**").hasAnyRole("ADMIN", "OWNER")
+                .requestMatchers(HttpMethod.PUT, "/api/pois/**").hasAnyRole("ADMIN", "OWNER")
+                .requestMatchers(HttpMethod.PATCH, "/api/pois/**").hasRole("ADMIN")
+                // Tour write: ADMIN only
+                .requestMatchers(HttpMethod.POST, "/api/tours/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/tours/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/tours/**").hasRole("ADMIN")
+                // QR create: ADMIN only
+                .requestMatchers(HttpMethod.POST, "/api/qr/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/uploads/images").hasAnyRole("ADMIN", "OWNER")
+                // All other requests: authenticated
                 .anyRequest().authenticated()
             );
 
@@ -74,14 +85,14 @@ public class SecurityConfig {
 
         return http.build();
     }
-    
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

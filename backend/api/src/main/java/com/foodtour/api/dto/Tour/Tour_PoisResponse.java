@@ -16,5 +16,6 @@ public class Tour_PoisResponse {
 
     private Long poiId;
     private Integer orderIndex;
+    private String poiName;
 }
 

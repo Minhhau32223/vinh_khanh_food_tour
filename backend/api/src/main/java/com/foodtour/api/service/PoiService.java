@@ -34,4 +34,8 @@ public interface PoiService {
 
     // Cập nhật POI (Admin)
     PoiResponse updatePoi(Long id, PoiRequest request);
+
+    Boolean updateStutus(Long id);
+
+    PoiResponse approvePoi(Long id);
 }

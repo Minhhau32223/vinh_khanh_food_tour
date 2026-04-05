@@ -1,0 +1,56 @@
+version: '3.9'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: foodtour_db
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: food_tour
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./init_schema.sql:/docker-entrypoint-initdb.d/init_schema.sql
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ppassword"]
+      interval: 10s
+      timeout: 20s
+      retries: 10
+
+  translate-service:
+    build: ./translate-service
+    container_name: translate_service
+    ports:
+      - "5000:5000"
+
+  tts-service:
+    build: ./tts-service
+    container_name: tts_service
+    ports:
+      - "8000:8000"
+
+  api:
+    build: ./api
+    container_name: foodtour_api
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/food_tour?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=password
+      - TRANSLATE_URL=http://translate-service:5000/translate
+      - TTS_SERVICE_URL=http://tts-service:8000/generate
+    depends_on:
+      db:
+        condition: service_healthy
+      tts-service:
+        condition: service_started
+      translate-service:
+        condition: service_started
+    volumes:
+      - ./audio:/app/audio   # để lưu file audio
+    restart: on-failure
+
+volumes:
+  db_data:

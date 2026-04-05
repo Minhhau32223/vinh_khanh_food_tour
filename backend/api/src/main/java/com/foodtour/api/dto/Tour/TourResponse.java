@@ -3,6 +3,7 @@ package com.foodtour.api.dto.Tour;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -20,4 +21,6 @@ public class TourResponse {
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    private List<Tour_PoisResponse> pois;
 }

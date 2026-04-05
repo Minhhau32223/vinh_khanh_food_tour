@@ -1,7 +1,10 @@
 package com.foodtour.api.controller;
 
+import com.foodtour.api.dto.PoiContentsRequest;
+import com.foodtour.api.dto.PoiContentsResponse;
 import com.foodtour.api.dto.PoiRequest;
 import com.foodtour.api.dto.PoiResponse;
+import com.foodtour.api.service.PoiContentsService;
 import com.foodtour.api.service.PoiService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,7 @@ import java.util.List;
 public class PoiController {
 
     private final PoiService poiService;
+    private final PoiContentsService poiContentsService;
 
     /**
      * API 1: Lấy danh sách tất cả POI đang active.
@@ -40,6 +44,11 @@ public class PoiController {
         return ResponseEntity.ok(poiService.getAllPois());
     }
 
+    @GetMapping("/languages")
+    public ResponseEntity<List<String>> getSupportedLanguages() {
+        return ResponseEntity.ok(poiContentsService.getSupportedLanguages());
+    }
+
     /**
      * API 2: Lấy chi tiết một POI theo ID.
      * GET /api/pois/{id}
@@ -50,6 +59,7 @@ public class PoiController {
     public ResponseEntity<PoiResponse> getPoiById(@PathVariable Long id) {
         return ResponseEntity.ok(poiService.getPoiById(id));
     }
+
 
     /**
      * API 3:  GEOFENCE — Tìm POI gần vị trí hiện tại.
@@ -81,7 +91,7 @@ public class PoiController {
      * Response: PoiResponse với HTTP 201 Created
      */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public ResponseEntity<PoiResponse> createPoi(@Valid @RequestBody PoiRequest request) {
         return new ResponseEntity<>(poiService.createPoi(request), HttpStatus.CREATED);
     }
@@ -95,10 +105,61 @@ public class PoiController {
      * Response: PoiResponse đã được cập nhật
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public ResponseEntity<PoiResponse> updatePoi(
             @PathVariable Long id,
             @RequestBody PoiRequest request) {
         return ResponseEntity.ok(poiService.updatePoi(id, request));
     }
+    /**
+     * API 5: Cập nhật Status Poi (chỉ ADMIN).
+     * PATCH /api/pois/{id}/status
+     * Header: Authorization: Bearer <token>
+     *
+     * Chỉ cần gửi những field muốn thay đổi.
+     * Response: PoiResponse đã được cập nhật
+     */
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Boolean> updatePoiStatus(@PathVariable Long id) {
+        return ResponseEntity.ok(poiService.updateStutus(id));
+    }
+
+    @PatchMapping("/{id}/approve")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PoiResponse> approvePoi(@PathVariable Long id) {
+        return ResponseEntity.ok(poiService.approvePoi(id));
+    }
+
+
+    @PostMapping("/{id}/content")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
+    public ResponseEntity<List<PoiContentsResponse>> createPoiContent(
+            @PathVariable Long id,
+            @RequestBody PoiContentsRequest request
+    ) throws Exception {
+        // Lấy danh sách các nội dung POI từ service
+        List<PoiContentsResponse> responses = poiContentsService.createPoiContents(id, request);
+
+        // Trả về ResponseEntity với HTTP 200 và body là list
+        return ResponseEntity.ok(responses);
+    }
+
+
+
+    @GetMapping("/{id}/content/{language}")
+    public ResponseEntity<PoiContentsResponse> getPoiContentsByIdLanguage(
+            @PathVariable Long id,
+            @PathVariable String language
+    ) throws Exception {
+        return ResponseEntity.ok(poiContentsService.getPoiContentsByIdLanguage(id, language));
+    }
+
+    @GetMapping("/{id}/contents")
+    public ResponseEntity<List<PoiContentsResponse>> getPoiContents(@PathVariable Long id) {
+        return ResponseEntity.ok(poiContentsService.getPoiContents(id));
+    }
+
+
+
 }

@@ -35,6 +35,9 @@ public class PlayHistory {
     @Column(name = "trigger_type", nullable = false, length = 20)
     private String triggerType;
 
+    @Column(name = "language", length = 10)
+    private String language;
+
     // thời điểm phát (default CURRENT_TIMESTAMP)
     @CreationTimestamp
     @Column(name = "played_at", updatable = false)

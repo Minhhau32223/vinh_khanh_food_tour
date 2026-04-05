@@ -17,6 +17,7 @@ public class PlayHistoryResponse {
     private Long poiId;
     private Long poiContentId;
     private String triggerType;
+    private String language;
     private LocalDateTime playedAt;
     private Integer durationSeconds;
 }

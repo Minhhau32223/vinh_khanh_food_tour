@@ -12,4 +12,6 @@ import java.util.List;
 public interface Tour_PoisRepository extends JpaRepository<Tour_Pois, Long> {
 
     List<Tour_Pois> findByTourIdOrderByOrderIndexAsc(Long tourId);
+
+    void deleteByTourId(Long tourId);
 }

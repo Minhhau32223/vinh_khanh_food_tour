@@ -1,9 +1,13 @@
 package com.foodtour.api.repository;
 
-import com.foodtour.api.entity.PoiContent;
+import com.foodtour.api.entity.PoiContents;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-@Repository
-public interface PoiContentRepository extends JpaRepository<PoiContent, Long> {
+import java.util.List;
+import java.util.Optional;
+
+public interface PoiContentRepository extends JpaRepository<PoiContents, Long> {
+    List<PoiContents> findByPoiId(Long poiId);
+    Optional<PoiContents> findByPoiIdAndLanguageCode(Long poiId, String languageCode);
 }

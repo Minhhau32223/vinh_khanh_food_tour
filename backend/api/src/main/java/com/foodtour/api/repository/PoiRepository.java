@@ -18,4 +18,10 @@ public interface PoiRepository extends JpaRepository<Poi, Long> {
 
     // Lấy tất cả POI đang active
     List<Poi> findByIsActiveTrue();
+    List<Poi> findByIsActiveTrueAndStatus(String status);
+    List<Poi> findByOwnerId(Long ownerId);
+
+    long countByStatus(String status);
+
+    long countByStatusAndIsActive(String status, Boolean isActive);
 }
