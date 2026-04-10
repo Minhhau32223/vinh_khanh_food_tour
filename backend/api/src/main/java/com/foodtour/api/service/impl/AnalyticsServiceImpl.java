@@ -111,6 +111,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         long totalTours = tourRepository.count();
         long activeTours = tourRepository.countByIsActiveTrue();
         long totalSessions = sessionRepository.count();
+        long activeSessionsLast5Minutes = sessionRepository.countDistinctActiveSessions(5);
+        long activeSessionsLast30Minutes = sessionRepository.countDistinctActiveSessions(30);
         long totalPlayEvents = playHistoryRepository.count();
 
         Long sumDur = playHistoryRepository.sumDurationSeconds();
@@ -132,6 +134,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .totalTours(totalTours)
                 .activeTours(activeTours)
                 .totalSessions(totalSessions)
+                .activeSessionsLast5Minutes(activeSessionsLast5Minutes)
+                .activeSessionsLast30Minutes(activeSessionsLast30Minutes)
                 .totalPlayEvents(totalPlayEvents)
                 .totalListeningSecondsRecorded(totalListening)
                 .avgListeningSecondsPerPlayWithDuration(avgPerPlay)

@@ -665,6 +665,7 @@ img { max-width: 100%; display: block; }
 .badge-red    { background: #fff0f0; color: var(--clr-primary); }
 .badge-green  { background: #f0fff4; color: var(--clr-success); }
 .badge-orange { background: #fff3e0; color: var(--clr-accent); }
+.badge-info   { background: #e8f4fd; color: var(--clr-info); }
 
 /* ============================================
    MAP VIEW TABS

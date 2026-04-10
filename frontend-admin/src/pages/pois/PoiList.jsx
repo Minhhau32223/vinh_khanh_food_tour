@@ -137,6 +137,13 @@ export default function PoiList() {
                       <div className="flex gap-2">
                         <button
                           className="btn btn-secondary btn-sm"
+                          onClick={() => navigate(`/pois/${poi.id}`)}
+                          title="Xem noi dung POI"
+                        >
+                          Xem
+                        </button>
+                        <button
+                          className="btn btn-secondary btn-sm"
                           onClick={() => navigate(`/pois/${poi.id}/edit`)}
                           title="Sửa POI & nội dung"
                         >

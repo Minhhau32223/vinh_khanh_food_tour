@@ -69,20 +69,18 @@ export default function Login() {
         </form>
 
         <p style={{ textAlign: 'center', marginTop: '1.5rem', color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>
-          Phố Ẩm Thực Vĩnh Khánh · Admin v1.0
+          Phố Ẩm Thực Vĩnh Khánh
         </p>
         <p style={{ textAlign: 'center', marginTop: '0.5rem' }}>
           <button
             type="button"
             onClick={() => navigate('/register')}
-            style={{ background: 'none', border: 'none', color: 'var(--clr-primary-light)', cursor: 'pointer', fontSize: '0.8rem' }}
+            style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }}
           >
             Chủ quán chưa có tài khoản? Đăng ký tại đây
           </button>
         </p>
-        <p style={{ textAlign: 'center', marginTop: '0.5rem', color: 'rgba(255,255,255,0.2)', fontSize: '0.7rem' }}>
-          Backend: localhost:8080 · Cần khởi động Spring Boot trước
-        </p>
+
       </div>
     </div>
   );

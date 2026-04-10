@@ -26,7 +26,7 @@ const DEFAULT_POI = {
 };
 
 const DEFAULT_CONTENT = {
-  title: '', description: '', ttsScript: '', imageUrls: '', audioFileUrl: '',
+  title: '', description: '', ttsScript: '', imageUrls: '',
 };
 
 const LANGUAGE_OPTIONS = [
@@ -114,7 +114,6 @@ export default function PoiForm() {
             description: c.description || '',
             ttsScript: c.ttsScript || '',
             imageUrls: parseImageUrls(c.imageUrls).join('\n'),
-            audioFileUrl: c.audioFileUrl || '',
           });
         }
       }).catch(() => alert('Không thể tải dữ liệu POI'))
@@ -228,7 +227,7 @@ export default function PoiForm() {
         description: content.description.trim(),
         ttsScript: content.ttsScript.trim(),
         imageUrls: imageUrlsArr.length > 0 ? JSON.stringify(imageUrlsArr) : null,
-        audioFileUrl: content.audioFileUrl.trim() || null,
+        audioFileUrl: null,
       };
 
       await api.post(`/pois/${poiId}/content`, contentPayload);
@@ -481,23 +480,10 @@ export default function PoiForm() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">
-                  URL Audio MP3 có sẵn
-                  <span style={{ fontWeight: 400, color: 'var(--clr-text-muted)', marginLeft: 6, fontSize: '0.8rem' }}>
-                    (tuỳ chọn — để trống = TTS tự tạo)
-                  </span>
-                </label>
-                <input id="content-audio-url" className="form-input" type="url"
-                  value={content.audioFileUrl}
-                  onChange={e => setContent(c => ({ ...c, audioFileUrl: e.target.value }))}
-                  placeholder="https://example.com/audio-vi.mp3" />
+                <label className="form-label">Audio MP3</label>
                 <div className="form-hint">
-                  Nếu đã có file MP3 sẵn, nhập URL. Nếu trống, hệ thống dùng ttsScript để tạo audio.
+                  Audio se duoc tao tu dong tu ttsScript sau khi luu va duyet POI. Khong nhap URL audio thu cong o day.
                 </div>
-                {content.audioFileUrl && (
-                  <audio controls src={content.audioFileUrl}
-                    style={{ width: '100%', marginTop: 8, borderRadius: 8 }} />
-                )}
               </div>
             </div>
           </div>

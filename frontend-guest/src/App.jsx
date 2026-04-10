@@ -1,3 +1,4 @@
+import { Component } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { SessionProvider, useSession } from './contexts/SessionContext';
 import { AudioProvider, useAudio } from './contexts/AudioContext';
@@ -6,9 +7,69 @@ import PoiDetail from './pages/PoiDetail';
 import QRPage from './pages/QRPage';
 import TourList from './pages/TourList';
 import Settings from './pages/Settings';
-import LanguageSelector from './components/LanguageSelector';
-import { useState } from 'react';
 
+// ─── Error Boundary ────────────────────────────────────────────────────────────
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', minHeight: '100dvh', padding: '2rem',
+          fontFamily: 'system-ui, sans-serif', textAlign: 'center',
+          background: '#faf8f5', color: '#1a1a1a',
+        }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+          <div style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+            Ứng dụng gặp sự cố
+          </div>
+          <div style={{ fontSize: '0.85rem', color: '#888', marginBottom: '1.5rem', maxWidth: 320 }}>
+            {this.state.error?.message || 'Lỗi không xác định'}
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              background: '#c0392b', color: '#fff', border: 'none',
+              borderRadius: 12, padding: '0.75rem 1.5rem',
+              fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem',
+            }}
+          >
+            Tải lại trang
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ─── Language Options ──────────────────────────────────────────────────────────
+const LANGUAGE_OPTIONS = [
+  { code: 'vi', label: 'Tieng Viet' },
+  { code: 'en', label: 'English' },
+  { code: 'fr', label: 'Francais' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'ja', label: 'Japanese' },
+  { code: 'ko', label: 'Korean' },
+  { code: 'zh-CN', label: 'Chinese' },
+  { code: 'es', label: 'Spanish' },
+  { code: 'ru', label: 'Russian' },
+  { code: 'it', label: 'Italian' },
+  { code: 'pt', label: 'Portuguese' },
+  { code: 'th', label: 'Thai' },
+  { code: 'ar', label: 'Arabic' },
+  { code: 'tr', label: 'Turkish' },
+  { code: 'id', label: 'Indonesian' },
+];
+
+// ─── Now Playing Bar ───────────────────────────────────────────────────────────
 function NowPlayingBar() {
   const { playing, stop, toggle, progress, isPaused } = useAudio();
   if (!playing) return null;
@@ -36,6 +97,7 @@ function NowPlayingBar() {
   );
 }
 
+// ─── Geofence Toast ────────────────────────────────────────────────────────────
 function GeofenceToast() {
   const { activeToast } = useSession();
   if (!activeToast) return null;
@@ -50,8 +112,9 @@ function GeofenceToast() {
   );
 }
 
-function AppHeader({ onLangClick }) {
-  const { langLabel } = useSession();
+// ─── App Header ────────────────────────────────────────────────────────────────
+function AppHeader() {
+  const { language, updateLanguage } = useSession();
   return (
     <header className="app-header">
       <div className="header-brand">
@@ -65,14 +128,24 @@ function AppHeader({ onLangClick }) {
         <NavLink id="qr-btn" to="/qr" className="lang-btn" style={{ textDecoration: 'none' }}>
           QR
         </NavLink>
-        <button id="lang-btn" className="lang-btn" onClick={onLangClick}>{langLabel}</button>
+        <select
+          id="lang-select"
+          className="lang-btn"
+          value={language}
+          onChange={e => updateLanguage(e.target.value)}
+          style={{ border: 'none' }}
+        >
+          {LANGUAGE_OPTIONS.map(option => (
+            <option key={option.code} value={option.code}>{option.label}</option>
+          ))}
+        </select>
       </div>
     </header>
   );
 }
 
+// ─── Bottom Navigation ─────────────────────────────────────────────────────────
 function BottomNav() {
-  const { playing } = useAudio();
   const location = useLocation();
   const isDetail = location.pathname.startsWith('/poi/');
 
@@ -89,7 +162,7 @@ function BottomNav() {
         <span>Tour</span>
       </NavLink>
       <NavLink id="nav-qr" to="/qr" className={({ isActive }) => `nav-tab${isActive ? ' active' : ''}`}>
-        <span className="nav-tab-icon">ðŸ“·</span>
+        <span className="nav-tab-icon">📷</span>
         <span>QR</span>
       </NavLink>
       <NavLink id="nav-settings" to="/settings" className={({ isActive }) => `nav-tab${isActive ? ' active' : ''}`}>
@@ -100,15 +173,15 @@ function BottomNav() {
   );
 }
 
+// ─── App Shell ─────────────────────────────────────────────────────────────────
 function AppShell() {
-  const [showLang, setShowLang] = useState(false);
   const location = useLocation();
   const isDetail = location.pathname.startsWith('/poi/');
   const { playing } = useAudio();
 
   return (
     <>
-      {!isDetail && <AppHeader onLangClick={() => setShowLang(true)} />}
+      {!isDetail && <AppHeader />}
       <GeofenceToast />
 
       <div className={`page${playing ? ' with-player' : ''}`}>
@@ -124,19 +197,21 @@ function AppShell() {
 
       <NowPlayingBar />
       <BottomNav />
-      {showLang && <LanguageSelector onClose={() => setShowLang(false)} />}
     </>
   );
 }
 
+// ─── Root App ──────────────────────────────────────────────────────────────────
 export default function App() {
   return (
-    <SessionProvider>
-      <AudioProvider>
+    <ErrorBoundary>
+      <SessionProvider>
         <BrowserRouter>
-          <AppShell />
+          <AudioProvider>
+            <AppShell />
+          </AudioProvider>
         </BrowserRouter>
-      </AudioProvider>
-    </SessionProvider>
+      </SessionProvider>
+    </ErrorBoundary>
   );
 }

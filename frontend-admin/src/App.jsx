@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import PoiList from './pages/pois/PoiList';
 import PoiForm from './pages/pois/PoiForm';
+import PoiView from './pages/pois/PoiView';
 import PoiApprovalList from './pages/pois/PoiApprovalList';
 import PoiApprovalDetail from './pages/pois/PoiApprovalDetail';
 import TourList from './pages/tours/TourList';
@@ -32,6 +33,7 @@ function AppRoutes() {
       <Route path="/" element={<Navigate to="/pois" replace />} />
       <Route path="/pois" element={<ProtectedRoute><PoiList /></ProtectedRoute>} />
       <Route path="/pois/new" element={<ProtectedRoute><PoiForm /></ProtectedRoute>} />
+      <Route path="/pois/:id" element={<ProtectedRoute><PoiView /></ProtectedRoute>} />
       <Route path="/pois/:id/edit" element={<ProtectedRoute><PoiForm /></ProtectedRoute>} />
       <Route path="/poi-approvals" element={<AdminRoute><PoiApprovalList /></AdminRoute>} />
       <Route path="/poi-approvals/:id" element={<AdminRoute><PoiApprovalDetail /></AdminRoute>} />

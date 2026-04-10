@@ -12,8 +12,6 @@ export default function Analytics() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setDashError('');
     const requests = [
       api.get('/analytics/top-pois').then(r => ({ top: r.data })),
     ];
@@ -120,6 +118,20 @@ export default function Analytics() {
                   </div>
                 </div>
                 <div className="stat-card">
+                  <div className="stat-icon green">??</div>
+                  <div className="stat-info">
+                    <div className="stat-label">Dang dung (5 phut)</div>
+                    <div className="stat-value">{dashboard.activeSessionsLast5Minutes}</div>
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-icon blue">??</div>
+                  <div className="stat-info">
+                    <div className="stat-label">Hoat dong (30 phut)</div>
+                    <div className="stat-value">{dashboard.activeSessionsLast30Minutes}</div>
+                  </div>
+                </div>
+                <div className="stat-card">
                   <div className="stat-icon green">▶️</div>
                   <div className="stat-info">
                     <div className="stat-label">Lượt phát (log)</div>
@@ -144,6 +156,10 @@ export default function Analytics() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              <div className="form-hint" style={{ marginBottom: '1rem' }}>
+                So "Dang dung" duoc tinh theo session co log vi tri hoac phat audio trong 5 phut gan nhat.
               </div>
 
               <div className="section-header" style={{ marginBottom: '0.5rem', fontWeight: 700, fontSize: '0.9rem' }}>

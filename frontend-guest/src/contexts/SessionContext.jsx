@@ -1,9 +1,26 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import api from '../api/client';
 
 const SessionContext = createContext(null);
 
-const LANG_LABELS = { vi: '🇻🇳 Tiếng Việt', en: '🇺🇸 English', zh: '🇨🇳 中文' };
+const LANG_LABELS = {
+  vi: 'Tieng Viet',
+  en: 'English',
+  fr: 'Francais',
+  de: 'Deutsch',
+  ja: 'Japanese',
+  ko: 'Korean',
+  'zh-CN': 'Chinese',
+  es: 'Spanish',
+  ru: 'Russian',
+  it: 'Italian',
+  pt: 'Portuguese',
+  th: 'Thai',
+  ar: 'Arabic',
+  tr: 'Turkish',
+  id: 'Indonesian',
+};
 
 export function SessionProvider({ children }) {
   const [sessionId, setSessionId] = useState(() => localStorage.getItem('guest_session'));
@@ -11,47 +28,59 @@ export function SessionProvider({ children }) {
   const [currentTourId, setCurrentTourId] = useState(null);
   const [activeToast, setActiveToast] = useState(null);
   const toastTimer = useRef(null);
+  const isCreatingSession = useRef(false);
 
-  // Create session on mount if none exists
+  // Create session on mount if none exists — only depends on sessionId
   useEffect(() => {
-    if (!sessionId) {
-      const deviceId = 'web-' + Math.random().toString(36).slice(2);
-      api.post('/sessions', { deviceId, preferredLanguage: language })
-        .then(({ data }) => {
-          setSessionId(data.id);
-          localStorage.setItem('guest_session', data.id);
-        })
-        .catch(() => {});
-    }
-  }, []);
+    if (sessionId || isCreatingSession.current) return;
 
-  const updateLanguage = async lang => {
+    isCreatingSession.current = true;
+    const deviceId = 'web-' + Math.random().toString(36).slice(2);
+    const preferredLanguage = localStorage.getItem('guest_lang') || 'vi';
+
+    api.post('/sessions', { deviceId, preferredLanguage })
+      .then(({ data }) => {
+        const id = data.id ?? data.sessionId ?? data;
+        if (id) {
+          setSessionId(String(id));
+          localStorage.setItem('guest_session', String(id));
+        }
+      })
+      .catch(() => {
+        // Session creation failed – app still works without a session ID
+      })
+      .finally(() => {
+        isCreatingSession.current = false;
+      });
+  }, [sessionId]);
+
+  const updateLanguage = useCallback(async (lang) => {
     setLanguage(lang);
     localStorage.setItem('guest_lang', lang);
     if (sessionId) {
       await api.patch(`/sessions/${sessionId}`, { preferredLanguage: lang }).catch(() => {});
     }
-  };
+  }, [sessionId]);
 
-  const joinTour = async tourId => {
+  const joinTour = useCallback(async (tourId) => {
     setCurrentTourId(tourId);
     if (sessionId) {
       await api.patch(`/sessions/${sessionId}`, { currentTourId: tourId }).catch(() => {});
     }
-  };
+  }, [sessionId]);
 
-  const leaveTour = async () => {
+  const leaveTour = useCallback(async () => {
     setCurrentTourId(null);
     if (sessionId) {
       await api.patch(`/sessions/${sessionId}`, { currentTourId: null }).catch(() => {});
     }
-  };
+  }, [sessionId]);
 
-  const showToast = (message, duration = 4000) => {
+  const showToast = useCallback((message, duration = 4000) => {
     setActiveToast(message);
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setActiveToast(null), duration);
-  };
+  }, []);
 
   return (
     <SessionContext.Provider value={{

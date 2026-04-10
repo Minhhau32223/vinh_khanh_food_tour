@@ -75,7 +75,7 @@ export default function Register() {
           <button
             type="button"
             onClick={() => navigate('/login')}
-            style={{ background: 'none', border: 'none', color: 'var(--clr-primary-light)', cursor: 'pointer' }}
+            style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}
           >
             Đã có tài khoản? Đăng nhập
           </button>

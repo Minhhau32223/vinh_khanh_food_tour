@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useSession } from '../contexts/SessionContext';
 import { useAudio } from '../contexts/AudioContext';
+import { findOfflinePoiPackageItem } from '../utils/offlinePackage';
 
 function parseImageUrls(value) {
   if (!value) return [];
@@ -89,6 +90,7 @@ export default function PoiDetail() {
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fallback, setFallback] = useState(false);
+  const [offlineMode, setOfflineMode] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -106,7 +108,18 @@ export default function PoiDetail() {
         setContent(contentRes.data);
         setFallback(!!contentRes._fallback);
       }
-    }).catch(() => navigate('/'))
+      setOfflineMode(false);
+    }).catch(() => {
+      const offlineItem = findOfflinePoiPackageItem(id);
+      if (offlineItem?.poi) {
+        setPoi(offlineItem.poi);
+        setContent(offlineItem.content);
+        setFallback(!!offlineItem.usedFallbackToVietnamese);
+        setOfflineMode(true);
+        return;
+      }
+      navigate('/');
+    })
       .finally(() => setLoading(false));
   }, [id, language, navigate]);
 
@@ -139,6 +152,11 @@ export default function PoiDetail() {
 
       {/* Body */}
       <div className="detail-body">
+        {offlineMode && (
+          <div style={{ marginBottom: '1rem', borderRadius: 14, padding: '0.8rem 1rem', background: 'rgba(52, 152, 219, 0.12)', color: '#1f618d', border: '1px solid rgba(52, 152, 219, 0.25)' }}>
+            Dang mo noi dung tu goi offline da tai.
+          </div>
+        )}
         {/* Meta badges */}
         <div style={{ display: 'flex', gap: 8, marginBottom: '1rem', flexWrap: 'wrap' }}>
           <span className="badge badge-orange">{'★'.repeat(poi.priority)}</span>

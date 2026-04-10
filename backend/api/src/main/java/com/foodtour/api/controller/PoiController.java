@@ -4,6 +4,7 @@ import com.foodtour.api.dto.PoiContentsRequest;
 import com.foodtour.api.dto.PoiContentsResponse;
 import com.foodtour.api.dto.PoiRequest;
 import com.foodtour.api.dto.PoiResponse;
+import com.foodtour.api.dto.offline.OfflinePackageResponse;
 import com.foodtour.api.service.PoiContentsService;
 import com.foodtour.api.service.PoiService;
 import jakarta.validation.Valid;
@@ -47,6 +48,12 @@ public class PoiController {
     @GetMapping("/languages")
     public ResponseEntity<List<String>> getSupportedLanguages() {
         return ResponseEntity.ok(poiContentsService.getSupportedLanguages());
+    }
+
+    @GetMapping("/offline-package")
+    public ResponseEntity<OfflinePackageResponse> getOfflinePackage(
+            @RequestParam(name = "lang", defaultValue = "vi") String language) {
+        return ResponseEntity.ok(poiContentsService.buildOfflinePackage(language));
     }
 
     /**

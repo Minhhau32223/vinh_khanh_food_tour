@@ -2,6 +2,9 @@ package com.foodtour.api.service.impl;
 
 import com.foodtour.api.dto.PoiContentsRequest;
 import com.foodtour.api.dto.PoiContentsResponse;
+import com.foodtour.api.dto.PoiResponse;
+import com.foodtour.api.dto.offline.OfflinePackageResponse;
+import com.foodtour.api.dto.offline.OfflinePoiPackageItemResponse;
 import com.foodtour.api.entity.Poi;
 import com.foodtour.api.entity.PoiContents;
 import com.foodtour.api.repository.PoiContentRepository;
@@ -16,6 +19,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -211,6 +215,24 @@ public class PoiContentsServiceImpl implements PoiContentsService {
         return SUPPORTED_LANGUAGES;
     }
 
+    @Override
+    public OfflinePackageResponse buildOfflinePackage(String language) {
+        String requestedLanguage = hasText(language) ? language.trim() : "vi";
+
+        List<OfflinePoiPackageItemResponse> items = poiRepository.findByIsActiveTrueAndStatus("APPROVED").stream()
+                .map(poi -> mapOfflineItem(poi, requestedLanguage))
+                .filter(item -> item.getContent() != null)
+                .toList();
+
+        return OfflinePackageResponse.builder()
+                .language(requestedLanguage)
+                .generatedAt(LocalDateTime.now())
+                .totalPois(items.size())
+                .supportedLanguages(SUPPORTED_LANGUAGES)
+                .items(items)
+                .build();
+    }
+
     private List<PoiContentsResponse> contentsResponse(List<PoiContents> contentsList){
         return contentsList.stream().map(this::contentsResponse).toList();
     }
@@ -232,5 +254,40 @@ public class PoiContentsServiceImpl implements PoiContentsService {
 
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
+    }
+
+    private OfflinePoiPackageItemResponse mapOfflineItem(Poi poi, String requestedLanguage) {
+        PoiContents content = poiContentRepository.findByPoiIdAndLanguageCode(poi.getId(), requestedLanguage)
+                .orElseGet(() -> {
+                    if ("vi".equals(requestedLanguage)) {
+                        return null;
+                    }
+                    return poiContentRepository.findByPoiIdAndLanguageCode(poi.getId(), "vi").orElse(null);
+                });
+
+        boolean fallbackToVietnamese = content != null && !"vi".equals(requestedLanguage)
+                && "vi".equals(content.getLanguageCode());
+
+        return OfflinePoiPackageItemResponse.builder()
+                .poi(mapPoiResponse(poi))
+                .content(content != null ? contentsResponse(content) : null)
+                .usedFallbackToVietnamese(fallbackToVietnamese)
+                .build();
+    }
+
+    private PoiResponse mapPoiResponse(Poi poi) {
+        return PoiResponse.builder()
+                .id(poi.getId())
+                .name(poi.getName())
+                .latitude(poi.getLatitude())
+                .longitude(poi.getLongitude())
+                .triggerRadius(poi.getTriggerRadius())
+                .priority(poi.getPriority())
+                .isActive(poi.getIsActive())
+                .status(poi.getStatus())
+                .ownerId(poi.getOwnerId())
+                .createdAt(poi.getCreatedAt())
+                .updatedAt(poi.getUpdatedAt())
+                .build();
     }
 }

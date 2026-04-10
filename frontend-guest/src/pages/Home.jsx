@@ -1,29 +1,37 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import api from '../api/client';
-import { useGeofence } from '../hooks/useGeofence';
-import { useSession } from '../contexts/SessionContext';
+import { useAudio } from '../contexts/AudioContext';
+import { useGeofenceQueue } from '../hooks/useGeofenceQueue';
+import { loadOfflinePackage } from '../utils/offlinePackage';
 
-// Fix Leaflet icons
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
+// ─── Leaflet DivIcon – avoids all _getIconUrl / createIcon issues ────────────
+// Using DivIcon (SVG-based) instead of L.Icon so there's no image loading
+// involved, which is the root cause of the Vite bundler crash.
+function makeDivIcon(color = '#c0392b', label = '') {
+  return L.divIcon({
+    className: '',
+    iconSize: [28, 40],
+    iconAnchor: [14, 40],
+    popupAnchor: [0, -40],
+    html: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">
+      <path fill="${color}" stroke="white" stroke-width="1.5"
+        d="M14 0C6.27 0 0 6.27 0 14c0 9.63 14 26 14 26S28 23.63 28 14C28 6.27 21.73 0 14 0z"/>
+      <circle cx="14" cy="14" r="6" fill="white" opacity="0.9"/>
+      ${label ? `<text x="14" y="18" text-anchor="middle" font-size="8" fill="${color}" font-weight="bold">${label}</text>` : ''}
+    </svg>`,
+  });
+}
 
-// Custom red icon for active POI
-const redIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34],
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  shadowSize: [41, 41],
-});
+// Icon instances (created once at module scope)
+const defaultPoiIcon = makeDivIcon('#c0392b');
+const activePoiIcon  = makeDivIcon('#7d3c98');
+const userPosIcon    = makeDivIcon('#2980b9', '📍');
 
-const VN_CENTER = [10.7800, 106.7000]; // Vĩnh Khánh default
+const VN_CENTER = [10.7800, 106.7000];
 
 function distStr(km) {
   if (km < 1) return `${Math.round(km * 1000)} m`;
@@ -34,184 +42,263 @@ export default function Home() {
   const [pois, setPois] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userPos, setUserPos] = useState(null);
-  const [view, setView] = useState('map'); // 'map' | 'list'
+  const [view, setView] = useState('map');
   const [nearbyPoi, setNearbyPoi] = useState(null);
-  const [distances, setDistances] = useState({});
+  const [offlineMode, setOfflineMode] = useState(false);
   const navigate = useNavigate();
-  const { haversineKm } = useGeofence({ pois, onNearby: setNearbyPoi });
+  const { playing } = useAudio();
+  const { haversineKm } = useGeofenceQueue({ pois, onNearby: setNearbyPoi });
 
   useEffect(() => {
     api.get('/pois')
-      .then(r => setPois(r.data.filter(p => p.isActive !== false)))
-      .catch(() => {})
+      .then(r => {
+        setPois(r.data.filter(p => p.isActive !== false));
+        setOfflineMode(false);
+      })
+      .catch(() => {
+        const offlinePackage = loadOfflinePackage();
+        if (offlinePackage?.items?.length) {
+          setPois(offlinePackage.items.map(item => item.poi).filter(Boolean));
+          setOfflineMode(true);
+        }
+      })
       .finally(() => setLoading(false));
 
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(pos => {
-        setUserPos([pos.coords.latitude, pos.coords.longitude]);
-      }, () => {});
+      navigator.geolocation.getCurrentPosition(
+        pos => setUserPos([pos.coords.latitude, pos.coords.longitude]),
+        () => {}
+      );
     }
   }, []);
 
-  // Calculate distances when userPos changes
-  useEffect(() => {
-    if (!userPos || !pois.length) return;
+  const distances = useMemo(() => {
+    if (!userPos || !pois.length) return {};
     const d = {};
     pois.forEach(poi => {
       d[poi.id] = haversineKm(userPos[0], userPos[1], Number(poi.latitude), Number(poi.longitude));
     });
-    setDistances(d);
-  }, [userPos, pois]);
+    return d;
+  }, [userPos, pois, haversineKm]);
 
   const sortedPois = [...pois].sort((a, b) => {
-    const da = distances[a.id] ?? 999, db = distances[b.id] ?? 999;
+    const da = distances[a.id] ?? 999;
+    const db = distances[b.id] ?? 999;
     return da - db;
   });
 
   const mapCenter = userPos || VN_CENTER;
+  const activePoiId = playing?.poiId;
 
   return (
     <div>
-      {/* View Toggle */}
+      {offlineMode && (
+        <div style={{
+          margin: '0 var(--sp-4) 0.75rem', borderRadius: 14,
+          padding: '0.8rem 1rem', background: 'rgba(52, 152, 219, 0.12)',
+          color: '#1f618d', border: '1px solid rgba(52, 152, 219, 0.25)',
+        }}>
+          Dang hien thi du lieu offline da tai truoc do.
+        </div>
+      )}
+
+      {/* View Toggle Wrapper */}
       <div style={{ position: 'relative', height: view === 'map' ? 'calc(100dvh - 130px)' : 'auto' }}>
-        {view === 'map' ? (
+        {view === 'map' && (
           <div className="map-container">
             <MapContainer center={mapCenter} zoom={16} style={{ height: '100%' }}>
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              {/* User location marker */}
+
+              {/* User position */}
               {userPos && (
-                <Marker position={userPos} icon={redIcon}>
-                  <Popup>📍 Vị trí của bạn</Popup>
+                <Marker position={userPos} icon={userPosIcon}>
+                  <Popup>📍 Vi tri cua ban</Popup>
                 </Marker>
               )}
-              {/* POI markers with geofence circles */}
+
+              {/* POI markers */}
               {pois.map(poi => (
-                <span key={poi.id}>
-                  <Marker
-                    position={[Number(poi.latitude), Number(poi.longitude)]}
-                    eventHandlers={{ click: () => navigate(`/poi/${poi.id}`) }}
-                  >
-                    <Popup>
-                      <div style={{ minWidth: 140 }}>
-                        <div style={{ fontWeight: 700, marginBottom: 4 }}>{poi.name}</div>
-                        {distances[poi.id] != null && (
-                          <div style={{ fontSize: '0.8rem', color: '#667' }}>
-                            📏 {distStr(distances[poi.id])}
-                          </div>
-                        )}
-                        <button
-                          onClick={() => navigate(`/poi/${poi.id}`)}
-                          style={{ marginTop: 8, background: '#c0392b', color: '#fff', border: 'none', borderRadius: 8, padding: '4px 12px', cursor: 'pointer', width: '100%' }}
-                        >
-                          Xem chi tiết →
-                        </button>
-                        <a
-                          href={`https://www.google.com/maps/dir/?api=1&destination=${Number(poi.latitude)},${Number(poi.longitude)}${userPos ? `&origin=${userPos[0]},${userPos[1]}` : ''}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{ display: 'inline-block', marginTop: 8, fontSize: '0.8rem' }}
-                        >
-                          Mở chỉ đường
-                        </a>
-                      </div>
-                    </Popup>
-                  </Marker>
-                  <Circle
-                    center={[Number(poi.latitude), Number(poi.longitude)]}
-                    radius={poi.triggerRadius || 100}
-                    pathOptions={{ color: '#c0392b', fillColor: '#c0392b', fillOpacity: 0.05, weight: 1, dashArray: '4' }}
-                  />
-                </span>
+                <Marker
+                  key={`marker-${poi.id}`}
+                  position={[Number(poi.latitude), Number(poi.longitude)]}
+                  icon={activePoiId === poi.id ? activePoiIcon : defaultPoiIcon}
+                  eventHandlers={{ click: () => navigate(`/poi/${poi.id}`) }}
+                >
+                  <Popup>
+                    <div style={{ minWidth: 140 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 4 }}>{poi.name}</div>
+                      {activePoiId === poi.id && (
+                        <div style={{ fontSize: '0.8rem', color: '#7d3c98', fontWeight: 700 }}>
+                          🎙️ Dang phat thuyet minh
+                        </div>
+                      )}
+                      {distances[poi.id] != null && (
+                        <div style={{ fontSize: '0.8rem', color: '#667' }}>
+                          📏 {distStr(distances[poi.id])}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => navigate(`/poi/${poi.id}`)}
+                        style={{
+                          marginTop: 8, background: '#c0392b', color: '#fff',
+                          border: 'none', borderRadius: 8, padding: '4px 12px',
+                          cursor: 'pointer', width: '100%',
+                        }}
+                      >
+                        Xem chi tiet →
+                      </button>
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${Number(poi.latitude)},${Number(poi.longitude)}${userPos ? `&origin=${userPos[0]},${userPos[1]}` : ''}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ display: 'inline-block', marginTop: 8, fontSize: '0.8rem' }}
+                      >
+                        Mo chi duong ↗
+                      </a>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+
+              {/* Geofence circles */}
+              {pois.map(poi => (
+                <Circle
+                  key={`circle-${poi.id}`}
+                  center={[Number(poi.latitude), Number(poi.longitude)]}
+                  radius={poi.triggerRadius || 100}
+                  pathOptions={{
+                    color: activePoiId === poi.id ? '#7d3c98' : '#c0392b',
+                    fillColor: activePoiId === poi.id ? '#7d3c98' : '#c0392b',
+                    fillOpacity: activePoiId === poi.id ? 0.16 : 0.05,
+                    weight: activePoiId === poi.id ? 2 : 1,
+                    dashArray: activePoiId === poi.id ? undefined : '4',
+                  }}
+                />
               ))}
             </MapContainer>
-            {/* Floating toggle */}
+
+            {/* Floating map/list toggle */}
             <div className="view-toggle">
-              <button className="view-toggle-btn active" onClick={() => setView('map')}>🗺️ Bản đồ</button>
-              <button className="view-toggle-btn" onClick={() => setView('list')}>📋 Danh sách</button>
+              <button className="view-toggle-btn active" onClick={() => setView('map')}>
+                🗺️ Ban do
+              </button>
+              <button className="view-toggle-btn" onClick={() => setView('list')}>
+                📋 Danh sach
+              </button>
             </div>
           </div>
-        ) : null}
+        )}
       </div>
 
       {/* List View */}
-      {view === 'list' || view === 'map' ? (
+      {view === 'list' && (
         <div>
-          {view === 'list' && (
-            <div style={{ position: 'relative' }}>
-              <div className="view-toggle" style={{ position: 'relative', top: 0, right: 0, margin: '1rem 1rem 0 auto', width: 'fit-content' }}>
-                <button className="view-toggle-btn" onClick={() => setView('map')}>🗺️ Bản đồ</button>
-                <button className="view-toggle-btn active" onClick={() => setView('list')}>📋 Danh sách</button>
-              </div>
+          <div style={{ position: 'relative' }}>
+            <div className="view-toggle" style={{ position: 'relative', top: 0, right: 0, margin: '1rem 1rem 0 auto', width: 'fit-content' }}>
+              <button className="view-toggle-btn" onClick={() => setView('map')}>🗺️ Ban do</button>
+              <button className="view-toggle-btn active" onClick={() => setView('list')}>📋 Danh sach</button>
             </div>
-          )}
+          </div>
 
-          {view === 'list' && (
-            <div className="poi-list">
-              <div className="section-title">
-                {userPos ? `📍 ${sortedPois.length} địa điểm gần bạn` : `🍜 ${pois.length} địa điểm ẩm thực`}
+          <div className="poi-list">
+            <div className="section-title">
+              {userPos
+                ? `📍 ${sortedPois.length} dia diem gan ban`
+                : `🍜 ${pois.length} dia diem am thuc`}
+            </div>
+
+            {loading ? (
+              <div className="page-loading">
+                <div className="spinner" />
+                <span>Dang tai…</span>
               </div>
-
-              {loading ? (
-                <div className="page-loading"><div className="spinner" /><span>Đang tải…</span></div>
-              ) : sortedPois.length === 0 ? (
-                <div className="empty-page">
-                  <div className="empty-page-icon">📍</div>
-                  <div className="empty-page-title">Không có địa điểm</div>
-                </div>
-              ) : sortedPois.map(poi => (
-                <a key={poi.id} className="poi-card" onClick={() => navigate(`/poi/${poi.id}`)}>
-                  <div className="poi-card-inner">
+            ) : sortedPois.length === 0 ? (
+              <div className="empty-page">
+                <div className="empty-page-icon">📍</div>
+                <div className="empty-page-title">Khong co dia diem</div>
+              </div>
+            ) : (
+              sortedPois.map(poi => (
+                <a
+                  key={poi.id}
+                  className="poi-card"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => navigate(`/poi/${poi.id}`)}
+                >
+                  <div
+                    className="poi-card-inner"
+                    style={activePoiId === poi.id ? {
+                      border: '1px solid rgba(125,60,152,0.35)',
+                      borderRadius: 16,
+                      boxShadow: '0 0 0 2px rgba(125,60,152,0.08)',
+                    } : undefined}
+                  >
                     <div className="poi-card-icon">🍜</div>
                     <div className="poi-card-info">
                       <div className="poi-card-name">{poi.name}</div>
                       <div className="poi-card-dist">
-                        {distances[poi.id] != null ? `📏 ${distStr(distances[poi.id])}` : '📍 Địa điểm ẩm thực'}
+                        {distances[poi.id] != null
+                          ? `📏 ${distStr(distances[poi.id])}`
+                          : '📍 Dia diem am thuc'}
                         {poi.triggerRadius && ` · Geofence ${poi.triggerRadius}m`}
                       </div>
                     </div>
                     <div className="poi-card-priority">
-                      <span className="badge badge-orange">{'★'.repeat(poi.priority)}</span>
+                      <span className="badge badge-orange">{'★'.repeat(poi.priority || 0)}</span>
+                      {activePoiId === poi.id && (
+                        <span className="badge badge-info">Dang phat</span>
+                      )}
                       {nearbyPoi?.id === poi.id && (
-                        <span className="badge badge-red">📍 Gần bạn</span>
+                        <span className="badge badge-red">📍 Gan ban</span>
                       )}
                     </div>
                   </div>
                 </a>
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
         </div>
-      ) : null}
+      )}
 
-      {/* Below map POI list strip */}
+      {/* Below-map horizontal POI strip */}
       {view === 'map' && (
         <div className="poi-list" style={{ paddingTop: '0.5rem' }}>
-          <div className="section-title">Địa điểm gần đây</div>
+          <div className="section-title">Dia diem gan day</div>
           <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: 8 }}>
-            {sortedPois.slice(0, 6).map(poi => (
-              <div key={poi.id}
-                onClick={() => navigate(`/poi/${poi.id}`)}
-                style={{
-                  flexShrink: 0, width: 140,
-                  background: 'var(--clr-surface)',
-                  borderRadius: 12, padding: 10,
-                  border: '1px solid var(--clr-border)',
-                  cursor: 'pointer',
-                  boxShadow: 'var(--sh-sm)',
-                }}
-              >
-                <div style={{ fontSize: '1.5rem', marginBottom: 6 }}>🍜</div>
-                <div style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {poi.name}
-                </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--clr-muted)' }}>
-                  {distances[poi.id] != null ? distStr(distances[poi.id]) : '—'}
-                </div>
+            {loading ? (
+              <div style={{ color: 'var(--clr-muted)', fontSize: '0.85rem', padding: '0.5rem' }}>
+                Dang tai...
               </div>
-            ))}
+            ) : (
+              sortedPois.slice(0, 6).map(poi => (
+                <div
+                  key={poi.id}
+                  onClick={() => navigate(`/poi/${poi.id}`)}
+                  style={{
+                    flexShrink: 0, width: 140,
+                    background: 'var(--clr-surface)',
+                    borderRadius: 12, padding: 10,
+                    border: `1px solid ${activePoiId === poi.id ? 'rgba(125,60,152,0.4)' : 'var(--clr-border)'}`,
+                    cursor: 'pointer',
+                    boxShadow: 'var(--sh-sm)',
+                  }}
+                >
+                  <div style={{ fontSize: '1.5rem', marginBottom: 6 }}>🍜</div>
+                  <div style={{
+                    fontSize: '0.8rem', fontWeight: 700, marginBottom: 2,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>
+                    {poi.name}
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--clr-muted)' }}>
+                    {distances[poi.id] != null ? distStr(distances[poi.id]) : '—'}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

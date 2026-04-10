@@ -19,6 +19,8 @@ public class AdminDashboardStatsResponse {
     private long totalTours;
     private long activeTours;
     private long totalSessions;
+    private long activeSessionsLast5Minutes;
+    private long activeSessionsLast30Minutes;
     private long totalPlayEvents;
     /** Tổng giây đã ghi nhận (theo các lần cập nhật duration). */
     private long totalListeningSecondsRecorded;
