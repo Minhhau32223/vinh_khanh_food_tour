@@ -1,7 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import Layout from '../../components/Layout/Layout';
 import api from '../../api/client';
+import { useAuth } from '../../contexts/AuthContext';
+
+const GUEST_ORIGIN = import.meta.env.VITE_GUEST_ORIGIN || 'http://localhost:5174';
 
 function parseImageUrls(value) {
   if (!value) return [];
@@ -18,10 +22,63 @@ function parseImageUrls(value) {
 export default function PoiView() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [poi, setPoi] = useState(null);
   const [contents, setContents] = useState([]);
   const [selectedLanguage, setSelectedLanguage] = useState('vi');
   const [loading, setLoading] = useState(true);
+  const [qrData, setQrData] = useState(null);
+  const [generatingQR, setGeneratingQR] = useState(false);
+  const svgContainerRef = useRef(null);
+
+  const guestQRUrl = qrData ? `${GUEST_ORIGIN}/qr/${encodeURIComponent(qrData.qrValue)}` : null;
+
+  const generateQR = async () => {
+    if (!poi) return;
+    setGeneratingQR(true);
+    try {
+      const { data } = await api.post(`/qr/${poi.id}`, { note: 'Generated from PoiView' });
+      setQrData(data);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Không thể tạo QR');
+    } finally {
+      setGeneratingQR(false);
+    }
+  };
+
+  const downloadQR = () => {
+    const svgEl = svgContainerRef.current?.querySelector('svg');
+    if (!svgEl) return;
+    const size = 400;
+    const canvas = document.createElement('canvas');
+    canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const svgData = new XMLSerializer().serializeToString(svgEl);
+    const blob = new Blob([svgData], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(img, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = `qr-poi-${id}.png`;
+      link.click();
+    };
+    img.src = url;
+  };
+
+  const copyGuestLink = async () => {
+    if (!guestQRUrl) return;
+    try {
+      await navigator.clipboard.writeText(guestQRUrl);
+      alert('✅ Đã copy link Guest!');
+    } catch {
+      alert('Link: ' + guestQRUrl);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -39,6 +96,12 @@ export default function PoiView() {
             : contentData[0].languageCode
         ));
       }
+      // Load QR nếu có
+      try {
+        const { data: allQR } = await api.get('/qr/admin');
+        const found = allQR.find(q => String(q.poiId) === String(id));
+        if (found) setQrData(found);
+      } catch { /* QR optional */ }
     } catch {
       alert('Khong the tai noi dung POI');
       navigate('/pois');
@@ -148,6 +211,90 @@ export default function PoiView() {
                 </div>
               ) : (
                 <div className="alert alert-warning">POI nay chua co noi dung cho ngon ngu duoc chon.</div>
+              )}
+            </div>
+          </div>
+
+          {/* QR Code Card */}
+          <div className="card">
+            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="card-title">📱 QR Code</span>
+              {isAdmin && (
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={generateQR}
+                  disabled={generatingQR || poi?.status !== 'APPROVED'}
+                  title={poi?.status !== 'APPROVED' ? 'POI phải được duyệt để tạo QR' : ''}
+                >
+                  {generatingQR
+                    ? <><span className="spinner spinner-sm" style={{ borderTopColor: '#fff' }} /> Đang tạo…</>
+                    : qrData ? '🔄 Tạo lại QR' : '✨ Tạo QR'
+                  }
+                </button>
+              )}
+            </div>
+            <div className="card-body">
+              {qrData ? (
+                <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                  {/* QR image */}
+                  <div
+                    ref={svgContainerRef}
+                    style={{
+                      background: '#fff',
+                      padding: 16,
+                      borderRadius: 16,
+                      border: '2px solid var(--clr-border)',
+                      boxShadow: 'var(--shadow-md)',
+                      lineHeight: 0,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <QRCodeSVG
+                      value={guestQRUrl}
+                      size={180}
+                      level="H"
+                      includeMargin={false}
+                    />
+                  </div>
+
+                  {/* Info + actions */}
+                  <div style={{ flex: 1, minWidth: 220 }}>
+                    <div style={{ marginBottom: '0.75rem' }}>
+                      <div className="form-hint">Guest URL (nhúng vào QR)</div>
+                      <a
+                        href={guestQRUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ fontSize: '0.85rem', wordBreak: 'break-all' }}
+                      >
+                        {guestQRUrl}
+                      </a>
+                    </div>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <div className="form-hint">Mã QR (qr_value)</div>
+                      <code style={{ fontSize: '0.8rem', background: 'var(--clr-surface-2)', padding: '4px 8px', borderRadius: 6, wordBreak: 'break-all', display: 'inline-block' }}>
+                        {qrData.qrValue}
+                      </code>
+                    </div>
+                    <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
+                      <button className="btn btn-secondary btn-sm" onClick={downloadQR}>⬇️ Tải PNG</button>
+                      <button className="btn btn-secondary btn-sm" onClick={copyGuestLink}>📋 Copy link</button>
+                    </div>
+                    <div style={{ marginTop: '1rem', fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>
+                      Du khách scan QR → Guest web hiển thị nội dung POI + audio thuyết minh
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--clr-text-muted)' }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📱</div>
+                  <div style={{ fontWeight: 600 }}>Chưa có QR code cho POI này</div>
+                  <div style={{ fontSize: '0.85rem', marginTop: 6 }}>
+                    {poi?.status !== 'APPROVED'
+                      ? 'POI phải được duyệt (APPROVED) trước khi tạo QR.'
+                      : 'Nhấn "Tạo QR" ở trên để khởi tạo.'}
+                  </div>
+                </div>
               )}
             </div>
           </div>

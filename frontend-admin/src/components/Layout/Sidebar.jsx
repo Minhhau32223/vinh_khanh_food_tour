@@ -2,23 +2,31 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 const NAV = [
-  { section: 'Quản lý', items: [
-    { to: '/pois',      icon: '📍', label: 'Điểm tham quan (POI)' },
-    { to: '/tours',     icon: '🗺️', label: 'Tour du lịch' },
-    { to: '/qr',        icon: '📱', label: 'Mã QR' },
-  ]},
-  { section: 'Thống kê', items: [
-    { to: '/analytics', icon: '📊', label: 'Phân tích & Thống kê' },
-  ]},
+  {
+    section: 'Quản lý', items: [
+      { to: '/pois', icon: '', label: 'Điểm tham quan (POI)' },
+      { to: '/tours', icon: '', label: 'Tour du lịch' },
+      { to: '/qr', icon: '', label: 'Mã QR' },
+    ]
+  },
+  {
+    section: 'Thống kê', items: [
+      { to: '/analytics', icon: '', label: 'Phân tích & Thống kê' },
+    ]
+  },
 ];
 
 const ADMIN_NAV = [
-  { section: 'Duyet noi dung', items: [
-    { to: '/poi-approvals', icon: 'OK', label: 'Yeu cau duyet POI' },
-  ]},
-  { section: 'Hệ thống', items: [
-    { to: '/users',     icon: '👥', label: 'Người dùng' },
-  ]},
+  {
+    section: 'Duyệt nội dung', items: [
+      { to: '/poi-approvals', icon: '', label: 'Danh sách xin duyệt' },
+    ]
+  },
+  {
+    section: 'Hệ thống', items: [
+      { to: '/users', icon: '', label: 'Người dùng' },
+    ]
+  },
 ];
 
 export default function Sidebar() {
