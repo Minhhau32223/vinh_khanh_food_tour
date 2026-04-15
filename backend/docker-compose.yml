@@ -41,6 +41,9 @@ services:
       - SPRING_DATASOURCE_PASSWORD=password
       - TRANSLATE_URL=http://translate-service:5000/translate
       - TTS_SERVICE_URL=http://tts-service:8000/generate
+      - CLOUDINARY_CLOUD_NAME=djdrbgix5
+      - CLOUDINARY_API_KEY=467375341443691
+      - CLOUDINARY_API_SECRET=0JWvXef1_6b80tQxVPTAVovXJFM
     depends_on:
       db:
         condition: service_healthy
