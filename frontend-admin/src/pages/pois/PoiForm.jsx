@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+// import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import Layout from '../../components/Layout/Layout';
@@ -14,6 +15,24 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
+
+function makeDivIcon(color = '#c0392b', label = '') {
+  return L.divIcon({
+    className: '',
+    iconSize: [28, 40],
+    iconAnchor: [14, 40],
+    popupAnchor: [0, -40],
+    html: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">
+      <path fill="${color}" stroke="white" stroke-width="1.5"
+        d="M14 0C6.27 0 0 6.27 0 14c0 9.63 14 26 14 26S28 23.63 28 14C28 6.27 21.73 0 14 0z"/>
+      <circle cx="14" cy="14" r="6" fill="white" opacity="0.9"/>
+      ${label ? `<text x="14" y="18" text-anchor="middle" font-size="8" fill="${color}" font-weight="bold">${label}</text>` : ''}
+    </svg>`,
+  });
+}
+
+// Icon instances (created once at module scope)
+const defaultPoiIcon = makeDivIcon('#c0392b');
 
 function MapClickHandler({ onMapClick }) {
   useMapEvents({ click: e => onMapClick(e.latlng) });
@@ -83,9 +102,29 @@ export default function PoiForm() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
 
+  // Load các pois đã có trên hệ thống lên map
+  const [pois, setPois] = useState([]);
+
+  useEffect(() => {
+    api.get('/pois')
+      .then(r => {
+        setPois(r.data.filter(p => p.isActive !== false));
+        setOfflineMode(false);
+      })
+      .catch(() => {
+        const offlinePackage = loadOfflinePackage();
+        if (offlinePackage?.items?.length) {
+          setPois(offlinePackage.items.map(item => item.poi).filter(Boolean));
+          setOfflineMode(true);
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+
   useEffect(() => {
     if (isAdmin) {
-      api.get('/users').then(r => setUsers(r.data)).catch(() => {});
+      api.get('/users').then(r => setUsers(r.data)).catch(() => { });
     }
 
     if (isEdit) {
@@ -317,7 +356,7 @@ export default function PoiForm() {
                   <label className="form-label required">Ưu tiên (1–5)</label>
                   <select id="poi-priority" className={`form-select ${poiErrors.priority ? 'error' : ''}`}
                     value={poi.priority} onChange={e => setPoi(f => ({ ...f, priority: e.target.value }))}>
-                    {[1,2,3,4,5].map(n => <option key={n} value={n}>{'★'.repeat(n)} ({n})</option>)}
+                    {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{'★'.repeat(n)} ({n})</option>)}
                   </select>
                 </div>
               </div>
@@ -359,6 +398,39 @@ export default function PoiForm() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <MapClickHandler onMapClick={handleMapClick} />
                 {markerPos && <Marker position={markerPos} />}
+
+                {/* POI markers */}
+                {pois.map(poi => (
+                  <Marker
+                    key={`marker-${poi.id}`}
+                    position={[Number(poi.latitude), Number(poi.longitude)]}
+                    icon={defaultPoiIcon}
+                  >
+                    <Popup>
+                      <div style={{ minWidth: 140 }}>
+                        <div style={{ fontWeight: 700 }}>
+                          {poi.name}: {poi.latitude}, {poi.longitude}
+                        </div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+
+                {/* Geofence circles */}
+                {pois.map(poi => (
+                  <Circle
+                    key={`circle-${poi.id}`}
+                    center={[Number(poi.latitude), Number(poi.longitude)]}
+                    radius={poi.triggerRadius || 100}
+                    pathOptions={{
+                      color: '#c0392b',
+                      fillColor: '#c0392b',
+                      fillOpacity: 0.05,
+                      weight: 1,
+                      dashArray: '4',
+                    }}
+                  />
+                ))}
               </MapContainer>
               <div style={{ marginTop: 6, fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>
                 📍 {poi.latitude}, {poi.longitude}
