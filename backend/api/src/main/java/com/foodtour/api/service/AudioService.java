@@ -35,14 +35,4 @@ public class AudioService {
         return uploadResult.get("secure_url").toString();
     }
 
-//    public String createAudioFile(String text, String lang, String poiId) throws Exception {
-//        byte[] audioBytes = ttsClient.generateAudio(text, lang);
-//
-//        String fileName = "poi_" + poiId + "_" + lang + ".mp3";
-//        Path path = Paths.get("audio/" + fileName);
-//        Files.createDirectories(path.getParent());
-//        Files.write(path, audioBytes);
-//
-//        return "http://localhost:8080/audio/" + fileName;
-//    }
 }

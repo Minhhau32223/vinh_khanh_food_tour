@@ -1,5 +1,7 @@
 package com.foodtour.api.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.foodtour.api.dto.PoiContentsRequest;
 import com.foodtour.api.dto.PoiContentsResponse;
 import com.foodtour.api.dto.PoiResponse;
@@ -11,6 +13,7 @@ import com.foodtour.api.repository.PoiContentRepository;
 import com.foodtour.api.repository.PoiRepository;
 import com.foodtour.api.security.CustomUserDetails;
 import com.foodtour.api.service.AudioService;
+import com.foodtour.api.service.ImageService;
 import com.foodtour.api.service.PoiContentsService;
 import com.foodtour.api.service.TranslationService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -37,13 +41,17 @@ public class PoiContentsServiceImpl implements PoiContentsService {
     private final TranslationService translationService;
     private final PoiRepository poiRepository;
     private final AudioService audioService;
+    private final ImageService imageService;
     // Danh sách ngôn ngữ: vi + 15 ngôn ngữ khác
     private final List<String> langs = List.of(
             "en","fr","de","ja","ko","zh-CN","es","ru","it","pt","th","ar","tr","id"
     );
 
     @Override
-    public List<PoiContentsResponse> createPoiContents(Long poiId, PoiContentsRequest request) throws Exception {
+    public List<PoiContentsResponse> createPoiContents(Long poiId, String title,
+                                                       String description,
+                                                       String ttsScript,
+                                                       List<MultipartFile> images) throws Exception {
 
         Poi poi = poiRepository.findById(poiId)
                 .orElseThrow(() -> new RuntimeException("POI not found"));
@@ -60,7 +68,21 @@ public class PoiContentsServiceImpl implements PoiContentsService {
         List<PoiContents> results = new ArrayList<>();
 
         String separator = "###SPLIT###";
-        String imageUrls = request.getImageUrls();
+
+
+        /// Up anh that tu may
+        List<String> uploadedUrls = new ArrayList<>();
+
+        if (images != null) {
+            for (MultipartFile file : images) {
+                String url = imageService.uploadImage(file.getBytes(), poiId.toString());
+                uploadedUrls.add(url);
+            }
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        String imageUrls = mapper.writeValueAsString(uploadedUrls);
+
 
         // ===== 1. LƯU TIẾNG VIỆT =====
         PoiContents viContent = poiContentRepository.findByPoiIdAndLanguageCode(poiId, "vi")
@@ -71,13 +93,17 @@ public class PoiContentsServiceImpl implements PoiContentsService {
 
         viContent.setPoi(poi);
         viContent.setLanguageCode("vi");
-        viContent.setTitle(request.getTitle());
-        viContent.setDescription(request.getDescription());
-        viContent.setTtsScript(request.getTtsScript());
+        viContent.setTitle(title);
+        viContent.setDescription(description);
+        viContent.setTtsScript(ttsScript);
         viContent.setImageUrls(imageUrls);
-        viContent.setAudioFileUrl(hasText(request.getAudioFileUrl())
-                ? request.getAudioFileUrl().trim()
-                : audioService.createAudioFile(request.getTtsScript(), "vi", poiId.toString()));
+        viContent.setAudioFileUrl(
+                audioService.createAudioFile(ttsScript, "vi", poiId.toString())
+        );
+
+//        viContent.setAudioFileUrl(hasText(request.getAudioFileUrl())
+//                ? request.getAudioFileUrl().trim()
+//                : audioService.createAudioFile(request.getTtsScript(), "vi", poiId.toString()));
 
         results.add(viContent);
 
@@ -87,9 +113,10 @@ public class PoiContentsServiceImpl implements PoiContentsService {
         }
 
         // ===== 2. CHUẨN BỊ DỊCH =====
-        String combined = request.getTitle() + separator
-                + request.getDescription() + separator
-                + request.getTtsScript();
+        String combined = title + separator
+                + description + separator
+                + ttsScript;
+
 
         List<String> targetLangs = SUPPORTED_LANGUAGES.stream()
                 .filter(lang -> !"vi".equals(lang))
@@ -119,8 +146,8 @@ public class PoiContentsServiceImpl implements PoiContentsService {
                 continue;
             }
 
-            String title = parts[0];
-            String description = parts[1];
+            String title1 = parts[0];
+            String description1 = parts[1];
             String script = parts[2];
 
             String audioUrl = audioService.createAudioFile(
@@ -135,8 +162,8 @@ public class PoiContentsServiceImpl implements PoiContentsService {
                     .build());
             content.setPoi(poi);
             content.setLanguageCode(lang);
-            content.setTitle(title);
-            content.setDescription(description);
+            content.setTitle(title1);
+            content.setDescription(description1);
             content.setTtsScript(script);
             content.setImageUrls(imageUrls);
             content.setAudioFileUrl(audioUrl);

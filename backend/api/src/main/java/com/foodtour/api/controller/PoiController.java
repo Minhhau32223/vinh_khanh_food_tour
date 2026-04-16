@@ -10,9 +10,13 @@ import com.foodtour.api.service.PoiService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -138,20 +142,44 @@ public class PoiController {
         return ResponseEntity.ok(poiService.approvePoi(id));
     }
 
-
-    @PostMapping("/{id}/content")
+    @PostMapping(value = "/{poiId}/content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
-    public ResponseEntity<List<PoiContentsResponse>> createPoiContent(
-            @PathVariable Long id,
-            @RequestBody PoiContentsRequest request
+    public ResponseEntity<?> createPoiContents(
+            @PathVariable Long poiId,
+            @RequestParam String title,
+            @RequestParam String description,
+            @RequestParam String ttsScript,
+            @RequestParam(required = false) List<MultipartFile> images
     ) throws Exception {
-        // Lấy danh sách các nội dung POI từ service
-        List<PoiContentsResponse> responses = poiContentsService.createPoiContents(id, request);
-
-        // Trả về ResponseEntity với HTTP 200 và body là list
-        return ResponseEntity.ok(responses);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("Authenticated: " + auth.isAuthenticated());
+        System.out.println("Principal: " + auth.getPrincipal());
+        System.out.println("Authorities: " + auth.getAuthorities());
+        System.out.println("Images: " + images);
+        System.out.println("Size: " + (images == null ? "null" : images.size()));
+        return ResponseEntity.ok(
+                poiContentsService.createPoiContents(poiId, title,description,ttsScript, images)
+        );
     }
-
+    @PostMapping(value = "/{poiId}/content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
+    public ResponseEntity<?> updatePoiContents(
+            @PathVariable Long poiId,
+            @RequestParam String title,
+            @RequestParam String description,
+            @RequestParam String ttsScript,
+            @RequestParam(required = false) List<MultipartFile> images
+    ) throws Exception {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("Authenticated: " + auth.isAuthenticated());
+        System.out.println("Principal: " + auth.getPrincipal());
+        System.out.println("Authorities: " + auth.getAuthorities());
+        System.out.println("Images: " + images);
+        System.out.println("Size: " + (images == null ? "null" : images.size()));
+        return ResponseEntity.ok(
+                poiContentsService.createPoiContents(poiId, title,description,ttsScript, images)
+        );
+    }
 
 
     @GetMapping("/{id}/content/{language}")
