@@ -1,12 +1,16 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import api from '../api/client';
 import { useAudio } from '../contexts/AudioContext';
 import { useGeofenceQueue } from '../hooks/useGeofenceQueue';
 import { loadOfflinePackage } from '../utils/offlinePackage';
+// update
+import { useSession } from '../contexts/SessionContext';
+import 'leaflet-routing-machine';
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 
 // ─── Leaflet DivIcon – avoids all _getIconUrl / createIcon issues ────────────
 // Using DivIcon (SVG-based) instead of L.Icon so there's no image loading
@@ -26,10 +30,44 @@ function makeDivIcon(color = '#c0392b', label = '') {
   });
 }
 
+import { useMap } from 'react-leaflet';
+
+function Routing({ points }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!points || points.length < 2) return;
+
+    const routing = L.Routing.control({
+      waypoints: points.map(p => L.latLng(p[0], p[1])),
+
+      router: L.Routing.osrmv1({
+        serviceUrl: "https://router.project-osrm.org/route/v1"
+      }),
+
+      lineOptions: {
+        styles: [{ color: '#3abfe0', weight: 5 }],
+        interactive: false
+      },
+
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: true,
+      show: false,
+
+      createMarker: () => null  
+    }).addTo(map);
+
+    return () => map.removeControl(routing);
+  }, [points, map]);
+
+  return null;
+}
+
 // Icon instances (created once at module scope)
 const defaultPoiIcon = makeDivIcon('#c0392b');
-const activePoiIcon  = makeDivIcon('#7d3c98');
-const userPosIcon    = makeDivIcon('#2980b9', '📍');
+const activePoiIcon = makeDivIcon('#7d3c98');
+const userPosIcon = makeDivIcon('#2980b9', '📍');
 
 const VN_CENTER = [10.7800, 106.7000];
 
@@ -49,6 +87,34 @@ export default function Home() {
   const { playing } = useAudio();
   const { haversineKm } = useGeofenceQueue({ pois, onNearby: setNearbyPoi });
 
+  // update
+  const { currentTourId } = useSession();
+  const [tourPois, setTourPois] = useState([]);
+
+  // update
+  useEffect(() => {
+    if (!currentTourId) {
+      setTourPois([]);
+      return;
+    }
+    api.get(`/tours/${currentTourId}`)
+      .then(r => {
+        // Sắp xếp theo order_index rồi lấy tọa độ
+        const sorted = (r.data.pois || [])
+          .sort((a, b) => a.orderIndex - b.orderIndex);
+        setTourPois(sorted);
+      })
+      .catch(() => { });
+  }, [currentTourId]);
+
+  // update
+  const tourRoute = tourPois
+    .map(tp => {
+      const poi = pois.find(p => p.id === tp.poiId);
+      return poi ? [Number(poi.latitude), Number(poi.longitude)] : null;
+    })
+    .filter(Boolean);
+
   useEffect(() => {
     api.get('/pois')
       .then(r => {
@@ -67,7 +133,7 @@ export default function Home() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         pos => setUserPos([pos.coords.latitude, pos.coords.longitude]),
-        () => {}
+        () => { }
       );
     }
   }, []);
@@ -178,6 +244,40 @@ export default function Home() {
                   }}
                 />
               ))}
+
+
+              {/* Tour route - UPDATE */}
+              {tourRoute.length > 1 && (
+                <>
+                  {/* <Polyline
+                    positions={tourRoute}
+                    pathOptions={{
+                      color: '#e67e22',
+                      weight: 4,
+                      opacity: 0.8,
+                      dashArray: '10, 6',
+                    }}
+                  /> */}
+                  {tourRoute.length > 1 && (
+                    <Routing points={tourRoute} />
+                  )}
+
+                  console.log("tourRoute", tourRoute);
+                  {/* Đánh số thứ tự các điểm trong tour */}
+                  {tourPois.map((tp, i) => {
+                    const poi = pois.find(p => p.id === tp.poiId);
+                    if (!poi) return null;
+                    return (
+                      <Marker
+                        key={`tour-marker-${tp.poiId}`}
+                        position={[Number(poi.latitude), Number(poi.longitude)]}
+                        icon={makeDivIcon('#e67e22', String(i + 1))}
+                        eventHandlers={{ click: () => navigate(`/poi/${poi.id}`) }}
+                      />
+                    );
+                  })}
+                </>
+              )}
             </MapContainer>
 
             {/* Floating map/list toggle */}

@@ -25,7 +25,7 @@ public class TourServiceImpl implements TourService {
 
     @Override
     public List<TourResponse> getAllTours() {
-        return tourRepository.findByIsActiveTrue()
+        return tourRepository.findAll()
                 .stream()
                 .map(this::mapToResponseWithPois)
                 .collect(Collectors.toList());
