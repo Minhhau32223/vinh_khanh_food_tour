@@ -143,9 +143,14 @@ export default function PoiForm() {
       for (const file of files) {
         const formData = new FormData();
         formData.append('file', file);
-        const { data } = await api.post('/uploads/images', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        // Không set Content-Type thủ công — để Axios tự set với boundary đúng
+        const { data } = await api.post('/uploads/images', formData);
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        if (!data.url) {
+          throw new Error('Server không trả về URL ảnh');
+        }
         uploadedUrls.push(data.url);
       }
 
@@ -153,8 +158,9 @@ export default function PoiForm() {
         const merged = [...parseImageUrls(current.imageUrls), ...uploadedUrls];
         return { ...current, imageUrls: merged.join('\n') };
       });
-    } catch {
-      alert('Không thể upload ảnh');
+    } catch (err) {
+      const serverMsg = err.response?.data?.error || err.response?.data || err.message || 'Lỗi không xác định';
+      alert(`Không thể upload ảnh:\n${serverMsg}`);
     } finally {
       setUploadingImages(false);
       e.target.value = '';

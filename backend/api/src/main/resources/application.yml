@@ -14,6 +14,11 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 100MB
 
 server:
   port: 8080
@@ -24,6 +29,6 @@ app:
     expiration-ms: 86400000
 
 cloudinary:
-  cloud-name: ${CLOUDINARY_CLOUD_NAME}
-  api-key: ${CLOUDINARY_API_KEY}
-  api-secret: ${CLOUDINARY_API_SECRET}
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:djdrbgix5}
+  api-key: ${CLOUDINARY_API_KEY:467375341443691}
+  api-secret: ${CLOUDINARY_API_SECRET:0JWvXef1_6b80tQxVPTAVovXJFM}
