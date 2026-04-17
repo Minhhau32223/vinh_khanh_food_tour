@@ -12,7 +12,7 @@ import java.util.Map;
 @Service
 public class TranslationService {
 
-    @Value("${TRANSLATE_URL}")
+    @Value("${TRANSLATE_URL:http://translate-service:5000/translate}")
     private String translateUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();

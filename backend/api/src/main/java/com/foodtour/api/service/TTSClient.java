@@ -8,7 +8,7 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class TTSClient {
 
-    @Value("${TTS_SERVICE_URL}")
+    @Value("${TTS_SERVICE_URL:http://tts-service:5001/tts}")
     private String ttsUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
