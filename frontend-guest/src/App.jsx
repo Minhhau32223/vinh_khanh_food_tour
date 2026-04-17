@@ -125,15 +125,13 @@ function AppHeader() {
         </div>
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <NavLink id="qr-btn" to="/qr" className="lang-btn" style={{ textDecoration: 'none' }}>
-          QR
-        </NavLink>
+       
         <select
           id="lang-select"
           className="lang-btn"
           value={language}
           onChange={e => updateLanguage(e.target.value)}
-          style={{ border: 'none' }}
+          style={{ border: 'none'  , background:'rgba(169, 175, 175, 0.13)', color: 'inherit', fontSize: '0.9rem', cursor: 'pointer' }}
         >
           {LANGUAGE_OPTIONS.map(option => (
             <option key={option.code} value={option.code}>{option.label}</option>
