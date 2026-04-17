@@ -97,9 +97,6 @@ export default function PoiForm() {
   const [saveStep, setSaveStep] = useState(''); // 'poi' | 'content' | ''
   const [users, setUsers] = useState([]);
   const [mapCenter, setMapCenter] = useState([10.7553, 106.7053]);
-  const [previewLanguage, setPreviewLanguage] = useState('vi');
-  const [previewContent, setPreviewContent] = useState(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
 
   // Load các pois đã có trên hệ thống lên map
@@ -152,14 +149,6 @@ export default function PoiForm() {
     }
   }, [id, isAdmin, isEdit]);
 
-  useEffect(() => {
-    if (!isEdit) return;
-    setPreviewLoading(true);
-    api.get(`/pois/${id}/content/${previewLanguage}`)
-      .then(({ data }) => setPreviewContent(data))
-      .catch(() => setPreviewContent(null))
-      .finally(() => setPreviewLoading(false));
-  }, [id, isEdit, previewLanguage]);
 
   const handleImageUpload = async e => {
     const files = Array.from(e.target.files || []);
@@ -553,60 +542,6 @@ export default function PoiForm() {
           </div>
         </div>
 
-        {isEdit && (
-          <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span className="card-title">Xem lại nội dung theo ngôn ngữ</span>
-              <select className="form-select" style={{ maxWidth: 220 }} value={previewLanguage} onChange={e => setPreviewLanguage(e.target.value)}>
-                {LANGUAGE_OPTIONS.map(option => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className="card-body">
-              {previewLoading ? (
-                <div className="loading-center"><div className="spinner" /><span>Đang tải nội dung...</span></div>
-              ) : previewContent ? (
-                <div style={{ display: 'grid', gap: '0.75rem' }}>
-                  <div>
-                    <div className="form-hint">Tiêu đề</div>
-                    <div style={{ fontWeight: 700 }}>{previewContent.title || '-'}</div>
-                  </div>
-                  <div>
-                    <div className="form-hint">Mô tả</div>
-                    <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{previewContent.description || '-'}</div>
-                  </div>
-                  <div>
-                    <div className="form-hint">TTS Script</div>
-                    <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{previewContent.ttsScript || '-'}</div>
-                  </div>
-                  <div>
-                    <div className="form-hint">Hình ảnh</div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      {parseImageUrls(previewContent.imageUrls).map((url, index) => (
-                        <img
-                          key={`${url}-${index}`}
-                          src={url}
-                          alt={`preview-${index}`}
-                          style={{ width: 120, height: 84, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--clr-border)' }}
-                        />
-                      ))}
-                      {parseImageUrls(previewContent.imageUrls).length === 0 && <span>-</span>}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="form-hint">Audio</div>
-                    {previewContent.audioFileUrl ? (
-                      <audio controls src={previewContent.audioFileUrl} style={{ width: '100%' }} />
-                    ) : <span>-</span>}
-                  </div>
-                </div>
-              ) : (
-                <div className="alert alert-warning">Chưa có nội dung cho ngôn ngữ này.</div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Footer */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem' }}>
