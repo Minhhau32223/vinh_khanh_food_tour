@@ -154,7 +154,7 @@ export default function PoiDetail() {
       <div className="detail-body">
         {offlineMode && (
           <div style={{ marginBottom: '1rem', borderRadius: 14, padding: '0.8rem 1rem', background: 'rgba(52, 152, 219, 0.12)', color: '#1f618d', border: '1px solid rgba(52, 152, 219, 0.25)' }}>
-            Dang mo noi dung tu goi offline da tai.
+            Đang mở nội dung từ gói offline đã tải.
           </div>
         )}
         {/* Meta badges */}

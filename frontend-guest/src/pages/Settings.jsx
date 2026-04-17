@@ -71,7 +71,7 @@ export default function Settings() {
   }, []);
 
   const resetSession = () => {
-    if (window.confirm('Xoa session va bat dau lai?')) {
+    if (window.confirm('Xóa session và bắt đầu lại?')) {
       localStorage.removeItem('guest_session');
       localStorage.removeItem('guest_lang');
       window.location.reload();
@@ -86,7 +86,7 @@ export default function Settings() {
       setOfflineMeta(getOfflinePackageMeta());
       downloadOfflinePackageFile(data);
     } catch {
-      alert('Khong the tai goi offline luc nay');
+      alert('Không thể tải gói offline lúc này');
     } finally {
       setDownloadingOffline(false);
     }
@@ -106,17 +106,17 @@ export default function Settings() {
         textAlign: 'center', marginBottom: '1.5rem'
       }}>
         <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>🍜</div>
-        <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>Pho Am Thuc Vinh Khanh</div>
+        <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>Phố Ẩm Thực Vĩnh Khánh</div>
         <div style={{ opacity: 0.8, fontSize: '0.8rem', marginTop: 4 }}>
-          He Thong Du Lich Thong Minh · v1.0
+          Hệ Thống Du Lịch Thông Minh · v1.0
         </div>
       </div>
 
       {/* Language */}
       <div className="settings-section">
-        <div className="settings-header">Ngon ngu</div>
+        <div className="settings-header">Ngôn ngữ</div>
         <div className="settings-item">
-          <span className="settings-item-label">Ngon ngu phat</span>
+          <span className="settings-item-label">Ngôn ngữ phát</span>
           <select
             className="form-select"
             value={language}
@@ -134,7 +134,7 @@ export default function Settings() {
 
       {/* Session Info */}
       <div className="settings-section">
-        <div className="settings-header">📱 Phien lam viec</div>
+        <div className="settings-header">📱 Phiên làm việc</div>
         <div className="settings-item">
           <span className="settings-item-label">Session ID</span>
           <span className="settings-item-value" style={{ fontFamily: 'monospace', fontSize: '0.7rem', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -142,8 +142,8 @@ export default function Settings() {
           </span>
         </div>
         <div className="settings-item">
-          <span className="settings-item-label">Tour hien tai</span>
-          <span className="settings-item-value">{currentTourId ? `Tour #${currentTourId}` : 'Khong tham gia'}</span>
+          <span className="settings-item-label">Tour hiện tại</span>
+          <span className="settings-item-value">{currentTourId ? `Tour #${currentTourId}` : 'Không tham gia'}</span>
         </div>
         {currentTourId && (
           <div className="settings-item">
@@ -151,7 +151,7 @@ export default function Settings() {
               onClick={leaveTour}
               style={{ background: 'none', border: 'none', color: 'var(--clr-primary)', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}
             >
-              Roi tour hien tai
+              Rời tour hiện tại
             </button>
           </div>
         )}
@@ -161,59 +161,59 @@ export default function Settings() {
       <div className="settings-section">
         <div className="settings-header">📍 GPS & Geofence</div>
         <div className="settings-item">
-          <span className="settings-item-label">Tu dong phat theo vi tri</span>
-          <span className="settings-item-value" style={{ color: 'var(--clr-success)' }}>✔ Bat</span>
+          <span className="settings-item-label">Tự động phát theo vị trí</span>
+          <span className="settings-item-value" style={{ color: 'var(--clr-success)' }}>✔ Bật</span>
         </div>
         <div className="settings-item">
-          <span className="settings-item-label">Cooldown moi POI</span>
-          <span className="settings-item-value">30 giay</span>
+          <span className="settings-item-label">Cooldown mỗi POI</span>
+          <span className="settings-item-value">30 giây</span>
         </div>
         <div className="settings-item">
-          <span className="settings-item-label">Do chinh xac GPS</span>
+          <span className="settings-item-label">Độ chính xác GPS</span>
           <span className="settings-item-value">Cao</span>
         </div>
       </div>
 
       <div className="settings-section">
-        <div className="settings-header">Thiet bi & Offline</div>
+        <div className="settings-header">Thiết bị & Offline</div>
         <div className="settings-item">
-          <span className="settings-item-label">Trang thai mang</span>
+          <span className="settings-item-label">Trạng thái mạng</span>
           <span className="settings-item-value">{capabilities?.online ? 'Online' : 'Offline'}</span>
         </div>
         <div className="settings-item">
           <span className="settings-item-label">GPS</span>
-          <span className="settings-item-value">{capabilities?.geolocation ? 'Ho tro' : 'Khong ho tro'}</span>
+          <span className="settings-item-value">{capabilities?.geolocation ? 'Hỗ trợ' : 'Không hỗ trợ'}</span>
         </div>
         <div className="settings-item">
           <span className="settings-item-label">Camera / QR</span>
           <span className="settings-item-value">
-            {capabilities?.camera ? 'Camera OK' : 'Khong co camera'}
+            {capabilities?.camera ? 'Camera OK' : 'Không có camera'}
             {capabilities?.qrScanner ? ' · QR scan OK' : ' · QR scan fallback'}
           </span>
         </div>
         <div className="settings-item">
-          <span className="settings-item-label">Bo nho trong</span>
+          <span className="settings-item-label">Bộ nhớ trong</span>
           <span className="settings-item-value">
-            {capabilities?.storageFreeMb != null ? `${capabilities.storageFreeMb} MB` : 'Khong ro'}
+            {capabilities?.storageFreeMb != null ? `${capabilities.storageFreeMb} MB` : 'Không rõ'}
           </span>
         </div>
         <div className="settings-item">
-          <span className="settings-item-label">CPU / RAM tham khao</span>
+          <span className="settings-item-label">CPU / RAM tham khảo</span>
           <span className="settings-item-value">
             {capabilities?.cpuCores || '-'} cores · {capabilities?.deviceMemoryGb || '-'} GB
           </span>
         </div>
         <div className="settings-item">
-          <span className="settings-item-label">Goi offline</span>
+          <span className="settings-item-label">Gói offline</span>
           <span className="settings-item-value">
-            {offlineMeta ? `${offlineMeta.totalPois} POI · ${offlineMeta.language}` : 'Chua tai'}
+            {offlineMeta ? `${offlineMeta.totalPois} POI · ${offlineMeta.language}` : 'Chưa tải'}
           </span>
         </div>
         <div className="settings-item" style={{ display: 'block' }}>
           <div style={{ fontSize: '0.8rem', color: 'var(--clr-muted)', marginBottom: 10 }}>
             {capabilities?.canDownloadOffline
-              ? 'Thiet bi du dieu kien de tai goi noi dung offline cho ngon ngu hien tai.'
-              : 'Neu thiet bi khong du tai nguyen hoac dang offline, ung dung se uu tien stream audio va noi dung truc tiep.'}
+              ? 'Thiết bị đủ điều kiện để tải gói nội dung offline cho ngôn ngữ hiện tại.'
+              : 'Nếu thiết bị không đủ tài nguyên hoặc đang offline, ứng dụng sẽ ưu tiên stream audio và nội dung trực tiếp.'}
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
@@ -221,14 +221,14 @@ export default function Settings() {
               disabled={!capabilities?.canDownloadOffline || downloadingOffline}
               style={{ background: 'var(--clr-primary)', border: 'none', color: '#fff', borderRadius: 12, padding: '0.75rem 1rem', fontWeight: 700, cursor: 'pointer' }}
             >
-              {downloadingOffline ? 'Dang tai...' : 'Tai goi offline'}
+              {downloadingOffline ? 'Đang tải...' : 'Tải gói offline'}
             </button>
             <button
               onClick={handleClearOffline}
               disabled={!offlineMeta}
               style={{ background: '#fff', border: '1px solid var(--clr-border)', color: 'var(--clr-text)', borderRadius: 12, padding: '0.75rem 1rem', fontWeight: 600, cursor: 'pointer' }}
             >
-              Xoa goi offline
+              Xóa gói offline
             </button>
           </div>
         </div>
@@ -239,19 +239,19 @@ export default function Settings() {
           onClick={() => navigate('/qr')}
           style={{ background: 'none', border: 'none', color: 'var(--clr-primary)', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}
         >
-          Mo man hinh QR trigger
+          Mở màn hình QR trigger
         </button>
       </div>
 
       {/* About */}
       <div className="settings-section">
-        <div className="settings-header">ℹ️ Thong tin ung dung</div>
+        <div className="settings-header">ℹ️ Thông tin ứng dụng</div>
         <div className="settings-item">
-          <span className="settings-item-label">Phien ban</span>
+          <span className="settings-item-label">Phiên bản</span>
           <span className="settings-item-value">1.0.0 MVP</span>
         </div>
         <div className="settings-item">
-          <span className="settings-item-label">Ban do</span>
+          <span className="settings-item-label">Bản đồ</span>
           <span className="settings-item-value">OpenStreetMap</span>
         </div>
         <div className="settings-item">
@@ -271,7 +271,7 @@ export default function Settings() {
           fontSize: '0.875rem'
         }}
       >
-        🔄 Dat lai phien lam viec
+        🔄 Đặt lại phiên làm việc
       </button>
     </div>
   );
