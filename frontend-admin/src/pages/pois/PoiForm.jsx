@@ -80,7 +80,10 @@ export default function PoiForm() {
   const [saveStep, setSaveStep] = useState(''); // 'poi' | 'content' | ''
   const [users, setUsers] = useState([]);
   const [mapCenter, setMapCenter] = useState([10.7553, 106.7053]);
-  const [uploadingImages, setUploadingImages] = useState(false);
+
+  // File ảnh chọn từ máy — upload cùng lúc khi submit
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
 
   // Load các pois đã có trên hệ thống lên map
   const [pois, setPois] = useState([]);
@@ -133,38 +136,34 @@ export default function PoiForm() {
   }, [id, isAdmin, isEdit]);
 
 
-  const handleImageUpload = async e => {
+  const handleImageUpload = e => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
-    setUploadingImages(true);
-    try {
-      const uploadedUrls = [];
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append('file', file);
-        // Không set Content-Type thủ công — để Axios tự set với boundary đúng
-        const { data } = await api.post('/uploads/images', formData);
-        if (data.error) {
-          throw new Error(data.error);
-        }
-        if (!data.url) {
-          throw new Error('Server không trả về URL ảnh');
-        }
-        uploadedUrls.push(data.url);
-      }
+    // Chỉ preview local — file sẽ upload cùng FormData khi submit
+    setImageFiles(prev => [...prev, ...files]);
 
-      setContent(current => {
-        const merged = [...parseImageUrls(current.imageUrls), ...uploadedUrls];
-        return { ...current, imageUrls: merged.join('\n') };
-      });
-    } catch (err) {
-      const serverMsg = err.response?.data?.error || err.response?.data || err.message || 'Lỗi không xác định';
-      alert(`Không thể upload ảnh:\n${serverMsg}`);
-    } finally {
-      setUploadingImages(false);
-      e.target.value = '';
-    }
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        setImagePreviews(prev => [...prev, { name: file.name, dataUrl: ev.target.result }]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset input để có thể chọn lại cùng file
+    e.target.value = '';
+  };
+
+  const removeImageFile = idx => {
+    setImageFiles(prev => prev.filter((_, i) => i !== idx));
+    setImagePreviews(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const removeImageUrl = idx => {
+    const arr = parseImageUrls(content.imageUrls);
+    arr.splice(idx, 1);
+    setContent(c => ({ ...c, imageUrls: arr.join('\n') }));
   };
 
   // ── Validation ──
@@ -228,18 +227,21 @@ export default function PoiForm() {
         poiId = data.id;
       }
 
-      // STEP 2: Tạo / cập nhật POI Content (backend tự dịch 14 ngôn ngữ + TTS)
+      // STEP 2: Tạo / cập nhật POI Content via multipart/form-data
       setSaveStep('content');
       const imageUrlsArr = parseImageUrls(content.imageUrls);
-      const contentPayload = {
-        title: content.title.trim(),
-        description: content.description.trim(),
-        ttsScript: content.ttsScript.trim(),
-        imageUrls: imageUrlsArr.length > 0 ? JSON.stringify(imageUrlsArr) : null,
-        audioFileUrl: null,
-      };
 
-      await api.post(`/pois/${poiId}/content`, contentPayload);
+      const formData = new FormData();
+      formData.append('title', content.title.trim());
+      formData.append('description', content.description.trim());
+      formData.append('ttsScript', content.ttsScript.trim());
+      if (imageUrlsArr.length > 0) {
+        formData.append('imageUrls', JSON.stringify(imageUrlsArr));
+      }
+      // Đính kèm file ảnh chọn từ máy
+      imageFiles.forEach(file => formData.append('images', file));
+
+      await api.post(`/pois/${poiId}/content`, formData);
 
       navigate('/pois');
     } catch (err) {
@@ -460,21 +462,84 @@ export default function PoiForm() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Hình ảnh (mỗi dòng 1 URL)</label>
-                <input type="file" accept="image/*" multiple onChange={handleImageUpload} />
-                <div className="form-hint">Anh upload se duoc dua len Cloudinary va luu bang secure URL.</div>
-                {uploadingImages && <div className="form-hint">Dang upload anh...</div>}
-                <textarea id="content-image-urls" className="form-textarea" rows={3}
+                <label className="form-label">Hình ảnh</label>
+
+                {/* Upload từ máy */}
+                <label style={{
+                  display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                  padding: '0.6rem 1rem', borderRadius: 8, border: '2px dashed var(--clr-border)',
+                  background: 'var(--clr-bg-2)', marginBottom: 8, fontSize: '0.875rem',
+                  color: 'var(--clr-text-muted)', transition: 'border-color 0.2s',
+                }}>
+                  <span>📁</span>
+                  <span>Chọn ảnh từ máy (có thể chọn nhiều)</span>
+                  <input type="file" accept="image/*" multiple onChange={handleImageUpload}
+                    style={{ display: 'none' }} />
+                </label>
+
+                {/* Preview ảnh từ máy */}
+                {imagePreviews.length > 0 && (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                    {imagePreviews.map((img, i) => (
+                      <div key={i} style={{ position: 'relative', width: 80, height: 60 }}>
+                        <img
+                          src={img.dataUrl}
+                          alt={img.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6, border: '2px solid var(--clr-primary)' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImageFile(i)}
+                          style={{
+                            position: 'absolute', top: -6, right: -6,
+                            background: '#e74c3c', color: '#fff', border: 'none',
+                            borderRadius: '50%', width: 18, height: 18, cursor: 'pointer',
+                            fontSize: 10, lineHeight: '18px', textAlign: 'center', padding: 0,
+                          }}
+                          title={`Xóa ${img.name}`}
+                        >✕</button>
+                        <div style={{
+                          position: 'absolute', bottom: 0, left: 0, right: 0,
+                          background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: 8,
+                          padding: '1px 3px', borderRadius: '0 0 6px 6px',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>{img.name}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {imagePreviews.length > 0 && (
+                  <div className="form-hint" style={{ color: 'var(--clr-primary)', marginBottom: 6 }}>
+                    ✅ {imagePreviews.length} ảnh sẽ được upload lên Cloudinary khi bấm Lưu
+                  </div>
+                )}
+
+                {/* Hoặc nhập URL thủ công */}
+                <div className="form-hint" style={{ marginBottom: 4 }}>Hoặc nhập URL ảnh đã có (mỗi dòng 1 URL):</div>
+                <textarea id="content-image-urls" className="form-textarea" rows={2}
                   value={content.imageUrls}
                   onChange={e => setContent(c => ({ ...c, imageUrls: e.target.value }))}
-                  placeholder="https://example.com/hinh1.jpg&#10;https://example.com/hinh2.jpg" />
-                <div className="form-hint">Lưu dạng JSON array, mỗi dòng 1 URL</div>
+                  placeholder="https://res.cloudinary.com/..." />
+
+                {/* Preview ảnh URL đã có */}
                 {parseImageUrls(content.imageUrls).length > 0 && (
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
                     {parseImageUrls(content.imageUrls).map((url, i) => (
-                      <img key={i} src={url.trim()} alt={`img-${i}`}
-                        style={{ width: 72, height: 50, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--clr-border)' }}
-                        onError={e => e.target.style.display = 'none'} />
+                      <div key={i} style={{ position: 'relative', width: 80, height: 60 }}>
+                        <img src={url.trim()} alt={`url-img-${i}`}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6, border: '1px solid var(--clr-border)' }}
+                          onError={e => e.target.style.display = 'none'} />
+                        <button
+                          type="button"
+                          onClick={() => removeImageUrl(i)}
+                          style={{
+                            position: 'absolute', top: -6, right: -6,
+                            background: '#95a5a6', color: '#fff', border: 'none',
+                            borderRadius: '50%', width: 18, height: 18, cursor: 'pointer',
+                            fontSize: 10, lineHeight: '18px', textAlign: 'center', padding: 0,
+                          }}
+                        >✕</button>
+                      </div>
                     ))}
                   </div>
                 )}
