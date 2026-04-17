@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useSession } from '../contexts/SessionContext';
 
@@ -6,6 +7,7 @@ export default function TourList() {
   const [tours, setTours] = useState([]);
   const [loading, setLoading] = useState(true);
   const { currentTourId, joinTour, leaveTour } = useSession();
+  const navigate = useNavigate();
 
   useEffect(() => {
     api.get('/tours')
@@ -65,7 +67,10 @@ export default function TourList() {
               <button
                 id={`join-tour-${tour.id}`}
                 className="join-tour-btn"
-                onClick={() => joinTour(tour.id)}
+                onClick={() => {
+                  joinTour(tour.id);
+                  navigate('/');
+                }}
               >
                 ▶ Tham gia Tour
               </button>
