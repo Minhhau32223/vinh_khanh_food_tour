@@ -5,7 +5,7 @@ import api from '../api/client';
 const SessionContext = createContext(null);
 
 const LANG_LABELS = {
-  vi: 'Tieng Viet',
+  vi: 'Tiếng Việt',
   en: 'English',
   fr: 'Francais',
   de: 'Deutsch',

@@ -43,43 +43,45 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Auth routes: public
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/audio/**", "/img/**").permitAll()
-                // Session: public (khách vãng lai không cần đăng nhập)
-                .requestMatchers("/api/sessions/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/analytics/dashboard").hasRole("ADMIN")
-                // Analytics: public (guest log play events + top POI)
-                .requestMatchers("/api/analytics/**").permitAll()
-                // POI read: PUBLIC (guest web + mobile không cần đăng nhập)
-                .requestMatchers(HttpMethod.GET, "/api/pois/**").permitAll()
-                // Tour read: PUBLIC (guest web xem tour list)
-                .requestMatchers(HttpMethod.GET, "/api/tours/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/qr/admin/**").hasAnyRole("ADMIN", "OWNER")
-                // QR lookup: PUBLIC (guest scan QR không cần đăng nhập)
-                .requestMatchers(HttpMethod.GET, "/api/qr/**").permitAll()
-                // User management: ADMIN only
-                .requestMatchers(HttpMethod.GET, "/api/users/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/users/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PATCH, "/api/users/**").hasRole("ADMIN")
-                // POI write: ADMIN only
-                .requestMatchers(HttpMethod.POST, "/api/pois/**").hasAnyRole("ADMIN", "OWNER")
-                .requestMatchers(HttpMethod.PUT, "/api/pois/**").hasAnyRole("ADMIN", "OWNER")
-                .requestMatchers(HttpMethod.PATCH, "/api/pois/**").hasRole("ADMIN")
-                // Tour write: ADMIN only
-                .requestMatchers(HttpMethod.POST, "/api/tours/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/tours/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/tours/**").hasRole("ADMIN")
-                // QR create: ADMIN only
-                .requestMatchers(HttpMethod.POST, "/api/qr/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/uploads/images").hasAnyRole("ADMIN", "OWNER")
-                // All other requests: authenticated
-                .anyRequest().authenticated()
-            );
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // Languages Translation: public 
+                        .requestMatchers("/api/translate").permitAll()
+                        .requestMatchers("/api/translate/**").permitAll()
+                        // Auth routes: public
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/audio/**", "/img/**").permitAll()
+                        // Session: public (khách vãng lai không cần đăng nhập)
+                        .requestMatchers("/api/sessions/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/analytics/dashboard").hasRole("ADMIN")
+                        // Analytics: public (guest log play events + top POI)
+                        .requestMatchers("/api/analytics/**").permitAll()
+                        // POI read: PUBLIC (guest web + mobile không cần đăng nhập)
+                        .requestMatchers(HttpMethod.GET, "/api/pois/**").permitAll()
+                        // Tour read: PUBLIC (guest web xem tour list)
+                        .requestMatchers(HttpMethod.GET, "/api/tours/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/qr/admin/**").hasAnyRole("ADMIN", "OWNER")
+                        // QR lookup: PUBLIC (guest scan QR không cần đăng nhập)
+                        .requestMatchers(HttpMethod.GET, "/api/qr/**").permitAll()
+                        // User management: ADMIN only
+                        .requestMatchers(HttpMethod.GET, "/api/users/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/users/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/users/**").hasRole("ADMIN")
+                        // POI write: ADMIN only
+                        .requestMatchers(HttpMethod.POST, "/api/pois/**").hasAnyRole("ADMIN", "OWNER")
+                        .requestMatchers(HttpMethod.PUT, "/api/pois/**").hasAnyRole("ADMIN", "OWNER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/pois/**").hasRole("ADMIN")
+                        // Tour write: ADMIN only
+                        .requestMatchers(HttpMethod.POST, "/api/tours/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/tours/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/tours/**").hasRole("ADMIN")
+                        // QR create: ADMIN only
+                        .requestMatchers(HttpMethod.POST, "/api/qr/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/uploads/images").hasAnyRole("ADMIN", "OWNER")
+                        // All other requests: authenticated
+                        .anyRequest().authenticated());
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
