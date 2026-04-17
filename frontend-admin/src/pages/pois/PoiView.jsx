@@ -177,11 +177,11 @@ export default function PoiView() {
               {selectedContent ? (
                 <div style={{ display: 'grid', gap: '1rem' }}>
                   <div>
-                    <div className="form-hint">Tieu de</div>
+                    <div className="form-hint">Tiêu đề</div>
                     <div style={{ fontWeight: 700 }}>{selectedContent.title || '-'}</div>
                   </div>
                   <div>
-                    <div className="form-hint">Mo ta</div>
+                    <div className="form-hint">Mô tả</div>
                     <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{selectedContent.description || '-'}</div>
                   </div>
                   <div>
@@ -189,7 +189,7 @@ export default function PoiView() {
                     <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{selectedContent.ttsScript || '-'}</div>
                   </div>
                   <div>
-                    <div className="form-hint">Anh</div>
+                    <div className="form-hint">Ảnh</div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {parseImageUrls(selectedContent.imageUrls).map((url, index) => (
                         <img
