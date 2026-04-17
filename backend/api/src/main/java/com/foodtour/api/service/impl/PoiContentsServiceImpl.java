@@ -39,12 +39,7 @@ public class PoiContentsServiceImpl implements PoiContentsService {
     private final TranslationService translationService;
     private final PoiRepository poiRepository;
     private final AudioService audioService;
-  //  private final ImageService imageService;
     private final CloudinaryService cloudinaryService;
-    // Danh sách ngôn ngữ: vi + 15 ngôn ngữ khác
-    private final List<String> langs = List.of(
-            "en","fr","de","ja","ko","zh-CN","es","ru","it","pt","th","ar","tr","id"
-    );
 
     @Override
     public List<PoiContentsResponse> createPoiContents(Long poiId, PoiContentsRequest request,
@@ -64,7 +59,6 @@ public class PoiContentsServiceImpl implements PoiContentsService {
 
         List<PoiContents> results = new ArrayList<>();
         String separator = "###SPLIT###";
-
 
         // ===== 1. LƯU TIẾNG VIỆT =====
         PoiContents viContent = poiContentRepository.findByPoiIdAndLanguageCode(poiId, "vi")
@@ -87,9 +81,13 @@ public class PoiContentsServiceImpl implements PoiContentsService {
         viContent.setDescription(description);
         viContent.setTtsScript(ttsScript);
         viContent.setImageUrls(imageUrls);
-        viContent.setAudioFileUrl(
-                audioService.createAudioFile(ttsScript, "vi", poiId.toString())
-        );
+        // TTS có thể fail (service chưa sẵn) — fallback null, tạo lại sau khi chạy
+        try {
+            viContent.setAudioFileUrl(audioService.createAudioFile(ttsScript, "vi", poiId.toString()));
+        } catch (Exception ex) {
+            System.err.println("[AudioService] TTS failed for vi, poiId=" + poiId + ": " + ex.getMessage());
+            viContent.setAudioFileUrl(null);
+        }
 
         results.add(viContent);
 
@@ -99,48 +97,37 @@ public class PoiContentsServiceImpl implements PoiContentsService {
         }
 
         // ===== 2. CHUẨN BỊ DỊCH =====
-        String combined = title + separator
-                + description + separator
-                + ttsScript;
-
+        String combined = title + separator + description + separator + ttsScript;
 
         List<String> targetLangs = SUPPORTED_LANGUAGES.stream()
                 .filter(lang -> !"vi".equals(lang))
                 .toList();
 
-        Map<String, String> translations =
-                translationService.translate(combined, targetLangs);
+        Map<String, String> translations = translationService.translate(combined, targetLangs);
 
         // ===== 3. TẠO CÁC NGÔN NGỮ KHÁC =====
         Map<String, PoiContents> existingByLang = poiContentRepository.findByPoiId(poiId).stream()
-                .collect(Collectors.toMap(PoiContents::getLanguageCode, content -> content, (left, right) -> left));
+                .collect(Collectors.toMap(PoiContents::getLanguageCode, c -> c, (left, right) -> left));
+
         for (String lang : targetLangs) {
-
-            // bỏ qua nếu đã có
-//            if (poiContentRepository.findByPoiIdAndLanguageCode(poiId, lang).isPresent()) {
-//                continue;
-//            }
             String translated = translations != null ? translations.get(lang) : null;
-
             if (translated == null || !translated.contains(separator)) {
                 translated = combined;
             }
-
             String[] parts = translated.split(separator);
-
-            if (parts.length < 3) {
-                continue;
-            }
+            if (parts.length < 3) continue;
 
             String title1 = parts[0];
             String description1 = parts[1];
             String script = parts[2];
 
-            String audioUrl = audioService.createAudioFile(
-                    script,
-                    lang,
-                    poiId.toString()
-            );
+            String audioUrl;
+            try {
+                audioUrl = audioService.createAudioFile(script, lang, poiId.toString());
+            } catch (Exception ex) {
+                System.err.println("[AudioService] TTS failed for lang=" + lang + ", poiId=" + poiId + ": " + ex.getMessage());
+                audioUrl = null;
+            }
 
             PoiContents content = existingByLang.getOrDefault(lang, PoiContents.builder()
                     .poi(poi)
@@ -153,7 +140,6 @@ public class PoiContentsServiceImpl implements PoiContentsService {
             content.setTtsScript(script);
             content.setImageUrls(imageUrls);
             content.setAudioFileUrl(audioUrl);
-
             results.add(content);
         }
 
@@ -167,7 +153,6 @@ public class PoiContentsServiceImpl implements PoiContentsService {
         for (PoiContents content : contents) {
             content.setImageUrls(writeImageUrls(mergeImageUrls(null, content.getImageUrls(), uploadedUrls)));
         }
-
         return contentsResponse(poiContentRepository.saveAll(contents));
     }
 
@@ -193,7 +178,14 @@ public class PoiContentsServiceImpl implements PoiContentsService {
             String[] parts = translated.split(separator);
             if (parts.length < 3) continue;
 
-            String audioUrl = audioService.createAudioFile(parts[2], lang, poiId.toString());
+            String audioUrl;
+            try {
+                audioUrl = audioService.createAudioFile(parts[2], lang, poiId.toString());
+            } catch (Exception ex) {
+                System.err.println("[AudioService] TTS failed for lang=" + lang + ", poiId=" + poiId + ": " + ex.getMessage());
+                audioUrl = null;
+            }
+
             PoiContents content = existingByLang.getOrDefault(lang, PoiContents.builder()
                     .poi(poi)
                     .languageCode(lang)
@@ -213,13 +205,10 @@ public class PoiContentsServiceImpl implements PoiContentsService {
         }
     }
 
-
-
     @Override
     public PoiContentsResponse getPoiContentsByIdLanguage(Long id, String language) {
-
-        return poiContentRepository.findByPoiIdAndLanguageCode(id,language)
-                .map( poiContents -> contentsResponse(poiContents))
+        return poiContentRepository.findByPoiIdAndLanguageCode(id, language)
+                .map(this::contentsResponse)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nội dung POI với id: " + id + " và ngôn ngữ: " + language));
     }
 
@@ -257,7 +246,9 @@ public class PoiContentsServiceImpl implements PoiContentsService {
                 .build();
     }
 
-    private List<PoiContentsResponse> contentsResponse(List<PoiContents> contentsList){
+    // ── Private helpers ────────────────────────────────────────────────────────
+
+    private List<PoiContentsResponse> contentsResponse(List<PoiContents> contentsList) {
         return contentsList.stream().map(this::contentsResponse).toList();
     }
 
@@ -324,8 +315,8 @@ public class PoiContentsServiceImpl implements PoiContentsService {
         if (images == null || images.isEmpty()) {
             return uploadedUrls;
         }
-
         for (MultipartFile file : images) {
+            if (file == null || file.isEmpty()) continue;
             String publicId = "foodtour/image/poi_" + poiId + "_" + System.currentTimeMillis();
             uploadedUrls.add(cloudinaryService.uploadImage(file.getBytes(), publicId));
         }
@@ -346,7 +337,6 @@ public class PoiContentsServiceImpl implements PoiContentsService {
         if (!hasText(value)) {
             return new ArrayList<>();
         }
-
         try {
             return new ObjectMapper().readValue(value, new TypeReference<List<String>>() {});
         } catch (Exception ignored) {
