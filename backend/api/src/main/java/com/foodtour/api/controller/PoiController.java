@@ -161,13 +161,10 @@ public class PoiController {
                 poiContentsService.createPoiContents(poiId, title,description,ttsScript, images)
         );
     }
-    @PostMapping(value = "/{poiId}/content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PatchMapping(value = "/{poiId}/content/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public ResponseEntity<?> updatePoiContents(
             @PathVariable Long poiId,
-            @RequestParam String title,
-            @RequestParam String description,
-            @RequestParam String ttsScript,
             @RequestParam(required = false) List<MultipartFile> images
     ) throws Exception {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -177,7 +174,7 @@ public class PoiController {
         System.out.println("Images: " + images);
         System.out.println("Size: " + (images == null ? "null" : images.size()));
         return ResponseEntity.ok(
-                poiContentsService.createPoiContents(poiId, title,description,ttsScript, images)
+                poiContentsService.updatePoiContents(poiId, images)
         );
     }
 

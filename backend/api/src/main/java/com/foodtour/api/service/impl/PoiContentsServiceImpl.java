@@ -2,7 +2,6 @@ package com.foodtour.api.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.foodtour.api.dto.PoiContentsRequest;
 import com.foodtour.api.dto.PoiContentsResponse;
 import com.foodtour.api.dto.PoiResponse;
 import com.foodtour.api.dto.offline.OfflinePackageResponse;
@@ -12,10 +11,7 @@ import com.foodtour.api.entity.PoiContents;
 import com.foodtour.api.repository.PoiContentRepository;
 import com.foodtour.api.repository.PoiRepository;
 import com.foodtour.api.security.CustomUserDetails;
-import com.foodtour.api.service.AudioService;
-import com.foodtour.api.service.ImageService;
-import com.foodtour.api.service.PoiContentsService;
-import com.foodtour.api.service.TranslationService;
+import com.foodtour.api.service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -41,7 +37,8 @@ public class PoiContentsServiceImpl implements PoiContentsService {
     private final TranslationService translationService;
     private final PoiRepository poiRepository;
     private final AudioService audioService;
-    private final ImageService imageService;
+  //  private final ImageService imageService;
+    private final CloudinaryService cloudinaryService;
     // Danh sách ngôn ngữ: vi + 15 ngôn ngữ khác
     private final List<String> langs = List.of(
             "en","fr","de","ja","ko","zh-CN","es","ru","it","pt","th","ar","tr","id"
@@ -73,9 +70,16 @@ public class PoiContentsServiceImpl implements PoiContentsService {
         /// Up anh that tu may
         List<String> uploadedUrls = new ArrayList<>();
 
-        if (images != null) {
+        if (images != null && !images.isEmpty()) {
             for (MultipartFile file : images) {
-                String url = imageService.uploadImage(file.getBytes(), poiId.toString());
+
+                String publicId = "foodtour/image/poi_" + poiId + "_" + System.currentTimeMillis();
+
+                String url = cloudinaryService.uploadImage(
+                        file.getBytes(),
+                        publicId
+                );
+
                 uploadedUrls.add(url);
             }
         }
@@ -100,10 +104,6 @@ public class PoiContentsServiceImpl implements PoiContentsService {
         viContent.setAudioFileUrl(
                 audioService.createAudioFile(ttsScript, "vi", poiId.toString())
         );
-
-//        viContent.setAudioFileUrl(hasText(request.getAudioFileUrl())
-//                ? request.getAudioFileUrl().trim()
-//                : audioService.createAudioFile(request.getTtsScript(), "vi", poiId.toString()));
 
         results.add(viContent);
 
@@ -172,6 +172,46 @@ public class PoiContentsServiceImpl implements PoiContentsService {
         }
 
         return contentsResponse(poiContentRepository.saveAll(results));
+    }
+
+    @Override
+    public List<PoiContentsResponse> updatePoiContents(Long poiId, List<MultipartFile> images) throws Exception {
+        List<PoiContents> contents = poiContentRepository.findByPoiId(poiId);
+
+        List<String> uploadedUrls = new ArrayList<>();
+
+        if (images != null && !images.isEmpty()) {
+            for (MultipartFile file : images) {
+
+                String publicId = "foodtour/image/poi_" + poiId + "_" + System.currentTimeMillis();
+
+                String url = cloudinaryService.uploadImage(
+                        file.getBytes(),
+                        publicId
+                );
+
+                uploadedUrls.add(url);
+            }
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+
+
+
+        for (PoiContents content : contents) {
+
+            List<String> oldImages = new ArrayList<>();
+
+            if (content.getImageUrls() != null && !content.getImageUrls().isEmpty()) {
+                oldImages = mapper.readValue(content.getImageUrls(), new TypeReference<List<String>>() {});
+            }
+
+            oldImages.addAll(uploadedUrls);
+
+            content.setImageUrls(mapper.writeValueAsString(oldImages));
+        }
+
+        return contentsResponse(poiContentRepository.saveAll(contents));
     }
 
     @Override

@@ -12,6 +12,8 @@ public interface PoiContentsService {
                                                 String description,
                                                 String ttsScript,
                                                 List<MultipartFile> images) throws Exception;
+    List<PoiContentsResponse> updatePoiContents(Long id,
+                                                List<MultipartFile> images) throws Exception;
     PoiContentsResponse getPoiContentsByIdLanguage(Long id, String language);
     List<PoiContentsResponse> getPoiContents(Long poiId);
     List<String> getSupportedLanguages();
