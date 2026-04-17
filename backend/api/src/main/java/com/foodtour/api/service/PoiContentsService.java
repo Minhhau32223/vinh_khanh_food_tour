@@ -8,9 +8,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface PoiContentsService {
-    List<PoiContentsResponse> createPoiContents(Long id, String title,
-                                                String description,
-                                                String ttsScript,
+    List<PoiContentsResponse> createPoiContents(Long id,
+                                                PoiContentsRequest request,
                                                 List<MultipartFile> images) throws Exception;
     List<PoiContentsResponse> updatePoiContents(Long id,
                                                 List<MultipartFile> images) throws Exception;

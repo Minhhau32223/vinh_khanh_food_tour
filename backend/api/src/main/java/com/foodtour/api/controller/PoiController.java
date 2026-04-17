@@ -13,8 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -144,38 +142,40 @@ public class PoiController {
 
     @PostMapping(value = "/{poiId}/content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
-    public ResponseEntity<?> createPoiContents(
+    public ResponseEntity<List<PoiContentsResponse>> createPoiContentsMultipart(
             @PathVariable Long poiId,
             @RequestParam String title,
-            @RequestParam String description,
+            @RequestParam(required = false, defaultValue = "") String description,
             @RequestParam String ttsScript,
+            @RequestParam(required = false) String imageUrls,
             @RequestParam(required = false) List<MultipartFile> images
     ) throws Exception {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        System.out.println("Authenticated: " + auth.isAuthenticated());
-        System.out.println("Principal: " + auth.getPrincipal());
-        System.out.println("Authorities: " + auth.getAuthorities());
-        System.out.println("Images: " + images);
-        System.out.println("Size: " + (images == null ? "null" : images.size()));
-        return ResponseEntity.ok(
-                poiContentsService.createPoiContents(poiId, title,description,ttsScript, images)
-        );
+        PoiContentsRequest request = PoiContentsRequest.builder()
+                .poiId(poiId)
+                .title(title)
+                .description(description)
+                .ttsScript(ttsScript)
+                .imageUrls(imageUrls)
+                .build();
+        return ResponseEntity.ok(poiContentsService.createPoiContents(poiId, request, images));
     }
+
+    @PostMapping(value = "/{poiId}/content", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
+    public ResponseEntity<List<PoiContentsResponse>> createPoiContentsJson(
+            @PathVariable Long poiId,
+            @RequestBody PoiContentsRequest request
+    ) throws Exception {
+        return ResponseEntity.ok(poiContentsService.createPoiContents(poiId, request, null));
+    }
+
     @PatchMapping(value = "/{poiId}/content/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
-    public ResponseEntity<?> updatePoiContents(
+    public ResponseEntity<List<PoiContentsResponse>> updatePoiContents(
             @PathVariable Long poiId,
             @RequestParam(required = false) List<MultipartFile> images
     ) throws Exception {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        System.out.println("Authenticated: " + auth.isAuthenticated());
-        System.out.println("Principal: " + auth.getPrincipal());
-        System.out.println("Authorities: " + auth.getAuthorities());
-        System.out.println("Images: " + images);
-        System.out.println("Size: " + (images == null ? "null" : images.size()));
-        return ResponseEntity.ok(
-                poiContentsService.updatePoiContents(poiId, images)
-        );
+        return ResponseEntity.ok(poiContentsService.updatePoiContents(poiId, images));
     }
 
 

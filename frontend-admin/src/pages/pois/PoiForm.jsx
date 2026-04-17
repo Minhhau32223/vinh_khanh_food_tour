@@ -109,16 +109,8 @@ export default function PoiForm() {
     api.get('/pois')
       .then(r => {
         setPois(r.data.filter(p => p.isActive !== false));
-        setOfflineMode(false);
       })
-      .catch(() => {
-        const offlinePackage = loadOfflinePackage();
-        if (offlinePackage?.items?.length) {
-          setPois(offlinePackage.items.map(item => item.poi).filter(Boolean));
-          setOfflineMode(true);
-        }
-      })
-      .finally(() => setLoading(false));
+      .catch(() => { });
   }, []);
 
 
@@ -492,7 +484,7 @@ export default function PoiForm() {
               <div className="form-group">
                 <label className="form-label">Hình ảnh (mỗi dòng 1 URL)</label>
                 <input type="file" accept="image/*" multiple onChange={handleImageUpload} />
-                <div className="form-hint">Anh upload se duoc luu vao backend/img.</div>
+                <div className="form-hint">Anh upload se duoc dua len Cloudinary va luu bang secure URL.</div>
                 {uploadingImages && <div className="form-hint">Dang upload anh...</div>}
                 <textarea id="content-image-urls" className="form-textarea" rows={3}
                   value={content.imageUrls}

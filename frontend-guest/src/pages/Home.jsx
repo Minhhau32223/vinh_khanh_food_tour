@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import api from '../api/client';
@@ -94,7 +94,6 @@ export default function Home() {
   // update
   useEffect(() => {
     if (!currentTourId) {
-      setTourPois([]);
       return;
     }
     api.get(`/tours/${currentTourId}`)
@@ -108,7 +107,8 @@ export default function Home() {
   }, [currentTourId]);
 
   // update
-  const tourRoute = tourPois
+  const activeTourPois = currentTourId ? tourPois : [];
+  const tourRoute = activeTourPois
     .map(tp => {
       const poi = pois.find(p => p.id === tp.poiId);
       return poi ? [Number(poi.latitude), Number(poi.longitude)] : null;
@@ -262,9 +262,8 @@ export default function Home() {
                     <Routing points={tourRoute} />
                   )}
 
-                  console.log("tourRoute", tourRoute);
                   {/* Đánh số thứ tự các điểm trong tour */}
-                  {tourPois.map((tp, i) => {
+                  {activeTourPois.map((tp, i) => {
                     const poi = pois.find(p => p.id === tp.poiId);
                     if (!poi) return null;
                     return (

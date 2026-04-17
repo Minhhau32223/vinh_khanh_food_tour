@@ -2,6 +2,7 @@ package com.foodtour.api.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.foodtour.api.dto.PoiContentsRequest;
 import com.foodtour.api.dto.PoiContentsResponse;
 import com.foodtour.api.dto.PoiResponse;
 import com.foodtour.api.dto.offline.OfflinePackageResponse;
@@ -22,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -45,9 +47,7 @@ public class PoiContentsServiceImpl implements PoiContentsService {
     );
 
     @Override
-    public List<PoiContentsResponse> createPoiContents(Long poiId, String title,
-                                                       String description,
-                                                       String ttsScript,
+    public List<PoiContentsResponse> createPoiContents(Long poiId, PoiContentsRequest request,
                                                        List<MultipartFile> images) throws Exception {
 
         Poi poi = poiRepository.findById(poiId)
@@ -63,29 +63,7 @@ public class PoiContentsServiceImpl implements PoiContentsService {
         }
 
         List<PoiContents> results = new ArrayList<>();
-
         String separator = "###SPLIT###";
-
-
-        /// Up anh that tu may
-        List<String> uploadedUrls = new ArrayList<>();
-
-        if (images != null && !images.isEmpty()) {
-            for (MultipartFile file : images) {
-
-                String publicId = "foodtour/image/poi_" + poiId + "_" + System.currentTimeMillis();
-
-                String url = cloudinaryService.uploadImage(
-                        file.getBytes(),
-                        publicId
-                );
-
-                uploadedUrls.add(url);
-            }
-        }
-
-        ObjectMapper mapper = new ObjectMapper();
-        String imageUrls = mapper.writeValueAsString(uploadedUrls);
 
 
         // ===== 1. LƯU TIẾNG VIỆT =====
@@ -97,6 +75,14 @@ public class PoiContentsServiceImpl implements PoiContentsService {
 
         viContent.setPoi(poi);
         viContent.setLanguageCode("vi");
+        String title = safeText(request.getTitle());
+        String description = safeText(request.getDescription());
+        String ttsScript = safeText(request.getTtsScript());
+        String imageUrls = writeImageUrls(mergeImageUrls(
+                request.getImageUrls(),
+                viContent.getImageUrls(),
+                uploadImages(poiId, images)
+        ));
         viContent.setTitle(title);
         viContent.setDescription(description);
         viContent.setTtsScript(ttsScript);
@@ -177,38 +163,9 @@ public class PoiContentsServiceImpl implements PoiContentsService {
     @Override
     public List<PoiContentsResponse> updatePoiContents(Long poiId, List<MultipartFile> images) throws Exception {
         List<PoiContents> contents = poiContentRepository.findByPoiId(poiId);
-
-        List<String> uploadedUrls = new ArrayList<>();
-
-        if (images != null && !images.isEmpty()) {
-            for (MultipartFile file : images) {
-
-                String publicId = "foodtour/image/poi_" + poiId + "_" + System.currentTimeMillis();
-
-                String url = cloudinaryService.uploadImage(
-                        file.getBytes(),
-                        publicId
-                );
-
-                uploadedUrls.add(url);
-            }
-        }
-
-        ObjectMapper mapper = new ObjectMapper();
-
-
-
+        List<String> uploadedUrls = uploadImages(poiId, images);
         for (PoiContents content : contents) {
-
-            List<String> oldImages = new ArrayList<>();
-
-            if (content.getImageUrls() != null && !content.getImageUrls().isEmpty()) {
-                oldImages = mapper.readValue(content.getImageUrls(), new TypeReference<List<String>>() {});
-            }
-
-            oldImages.addAll(uploadedUrls);
-
-            content.setImageUrls(mapper.writeValueAsString(oldImages));
+            content.setImageUrls(writeImageUrls(mergeImageUrls(null, content.getImageUrls(), uploadedUrls)));
         }
 
         return contentsResponse(poiContentRepository.saveAll(contents));
@@ -356,5 +313,51 @@ public class PoiContentsServiceImpl implements PoiContentsService {
                 .createdAt(poi.getCreatedAt())
                 .updatedAt(poi.getUpdatedAt())
                 .build();
+    }
+
+    private String safeText(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private List<String> uploadImages(Long poiId, List<MultipartFile> images) throws Exception {
+        List<String> uploadedUrls = new ArrayList<>();
+        if (images == null || images.isEmpty()) {
+            return uploadedUrls;
+        }
+
+        for (MultipartFile file : images) {
+            String publicId = "foodtour/image/poi_" + poiId + "_" + System.currentTimeMillis();
+            uploadedUrls.add(cloudinaryService.uploadImage(file.getBytes(), publicId));
+        }
+        return uploadedUrls;
+    }
+
+    private List<String> mergeImageUrls(String requestImageUrls, String existingImageUrls, List<String> uploadedUrls) {
+        LinkedHashSet<String> merged = new LinkedHashSet<>();
+        merged.addAll(parseImageUrls(requestImageUrls));
+        if (merged.isEmpty()) {
+            merged.addAll(parseImageUrls(existingImageUrls));
+        }
+        merged.addAll(uploadedUrls);
+        return new ArrayList<>(merged);
+    }
+
+    private List<String> parseImageUrls(String value) {
+        if (!hasText(value)) {
+            return new ArrayList<>();
+        }
+
+        try {
+            return new ObjectMapper().readValue(value, new TypeReference<List<String>>() {});
+        } catch (Exception ignored) {
+            return List.of(value.split("\\n")).stream()
+                    .map(String::trim)
+                    .filter(item -> !item.isEmpty())
+                    .toList();
+        }
+    }
+
+    private String writeImageUrls(List<String> imageUrls) throws Exception {
+        return new ObjectMapper().writeValueAsString(imageUrls);
     }
 }
