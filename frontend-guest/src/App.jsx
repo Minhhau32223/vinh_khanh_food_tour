@@ -7,6 +7,8 @@ import PoiDetail from './pages/PoiDetail';
 import QRPage from './pages/QRPage';
 import TourList from './pages/TourList';
 import Settings from './pages/Settings';
+//chi tiết poi
+import { useNavigate } from 'react-router-dom';
 
 // ─── Error Boundary ────────────────────────────────────────────────────────────
 class ErrorBoundary extends Component {
@@ -72,23 +74,40 @@ const LANGUAGE_OPTIONS = [
 // ─── Now Playing Bar ───────────────────────────────────────────────────────────
 function NowPlayingBar() {
   const { playing, stop, toggle, progress, isPaused } = useAudio();
+  const navigate = useNavigate();
   if (!playing) return null;
+
+  const handleGoToDetail = () => {
+    if (playing.poiId) {
+      navigate(`/poi/${playing.poiId}`);
+    }
+  };
+
   return (
     <div className="now-playing">
-      <div className="now-playing-icon">
+      {/* 1. Phần Icon - Click cũng chuyển trang */}
+      <div className="now-playing-icon" onClick={handleGoToDetail} style={{ cursor: 'pointer' }}>
         {isPaused ? '⏸' : (
           <div className="sound-wave">
             {[1,2,3,4].map(i => <div key={i} className="sound-bar" />)}
           </div>
         )}
       </div>
-      <div className="now-playing-info">
+
+      {/* 2. Phần thông tin chữ - Click để chuyển trang */}
+      <div 
+        className="now-playing-info"
+        onClick={handleGoToDetail} 
+        style={{ cursor: 'pointer', flex: 1 }} // flex: 1 để chiếm không gian giữa
+      >
         <div className="now-playing-label">🎙️ Đang phát thuyết minh</div>
         <div className="now-playing-name">{playing.poiName}</div>
         <div style={{ marginTop: 4, height: 3, background: 'rgba(255,255,255,0.15)', borderRadius: 2 }}>
           <div style={{ width: `${progress}%`, height: '100%', background: 'var(--clr-primary-light)', borderRadius: 2, transition: 'width .3s' }} />
         </div>
       </div>
+
+      {/* 3. Các nút điều khiển - Giữ nguyên không thay đổi để tránh xung đột click */}
       <button className="now-playing-stop" onClick={toggle} title={isPaused ? 'Phát' : 'Tạm dừng'}>
         {isPaused ? '▶' : '⏸'}
       </button>

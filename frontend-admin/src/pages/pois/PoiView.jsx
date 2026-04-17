@@ -122,31 +122,31 @@ export default function PoiView() {
   return (
     <Layout
       title={poi ? `Xem POI #${poi.id}` : 'Xem POI'}
-      subtitle={poi?.name || 'Xem noi dung da tao theo tung ngon ngu'}
+      subtitle={poi?.name || 'Xem nội dung đã tạo theo từng ngôn ngữ'}
       actions={
         <div className="flex gap-2">
           <button className="btn btn-secondary" onClick={() => navigate('/pois')}>
-            Quay lai
+            Quay lại
           </button>
           <button className="btn btn-primary" onClick={() => navigate(`/pois/${id}/edit`)}>
-            Sua POI
+            Sửa POI
           </button>
         </div>
       }
     >
       {loading ? (
-        <div className="loading-center"><div className="spinner" /><span>Dang tai...</span></div>
+        <div className="loading-center"><div className="spinner" /><span>Đang tải...</span></div>
       ) : (
         <div style={{ display: 'grid', gap: '1rem' }}>
           <div className="card">
-            <div className="card-header"><span className="card-title">Thong tin POI</span></div>
+            <div className="card-header"><span className="card-title">Thông tin POI</span></div>
             <div className="card-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '1rem' }}>
               <div>
                 <div className="form-hint">Ten</div>
                 <div style={{ fontWeight: 700 }}>{poi?.name}</div>
               </div>
               <div>
-                <div className="form-hint">Trang thai</div>
+                <div className="form-hint">Trạng thái</div>
                 <span className={`badge ${poi?.status === 'APPROVED' ? 'badge-success' : 'badge-orange'}`}>
                   {poi?.status || 'PENDING'}
                 </span>
@@ -156,7 +156,7 @@ export default function PoiView() {
                 <div>{poi?.triggerRadius} m</div>
               </div>
               <div>
-                <div className="form-hint">Toa do</div>
+                <div className="form-hint">Tọa độ</div>
                 <div>{poi ? `${poi.latitude}, ${poi.longitude}` : '-'}</div>
               </div>
             </div>
@@ -164,7 +164,7 @@ export default function PoiView() {
 
           <div className="card">
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span className="card-title">Noi dung theo ngon ngu</span>
+              <span className="card-title">Nội dung theo ngôn ngữ</span>
               <select className="form-select" style={{ maxWidth: 220 }} value={selectedLanguage} onChange={e => setSelectedLanguage(e.target.value)}>
                 {contents.map(item => (
                   <option key={item.languageCode} value={item.languageCode}>
@@ -210,7 +210,7 @@ export default function PoiView() {
                   </div>
                 </div>
               ) : (
-                <div className="alert alert-warning">POI nay chua co noi dung cho ngon ngu duoc chon.</div>
+                <div className="alert alert-warning">POI này chưa có nội dung cho ngôn ngữ được chọn.</div>
               )}
             </div>
           </div>

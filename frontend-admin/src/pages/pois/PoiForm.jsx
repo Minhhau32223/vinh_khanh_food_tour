@@ -190,7 +190,7 @@ export default function PoiForm() {
         return { ...current, imageUrls: merged.join('\n') };
       });
     } catch {
-      alert('Khong the upload anh');
+      alert('Không thể upload ảnh');
     } finally {
       setUploadingImages(false);
       e.target.value = '';
@@ -554,7 +554,7 @@ export default function PoiForm() {
               <div className="form-group">
                 <label className="form-label">Audio MP3</label>
                 <div className="form-hint">
-                  Audio se duoc tao tu dong tu ttsScript sau khi luu va duyet POI. Khong nhap URL audio thu cong o day.
+                  Audio sẽ được tạo tự động từ ttsScript sau khi lưu và duyệt POI. Không nhập URL audio thủ công ở đây.
                 </div>
               </div>
             </div>
@@ -564,7 +564,7 @@ export default function PoiForm() {
         {isEdit && (
           <div className="card" style={{ marginBottom: '1.5rem' }}>
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span className="card-title">Xem lai noi dung theo ngon ngu</span>
+              <span className="card-title">Xem lại nội dung theo ngôn ngữ</span>
               <select className="form-select" style={{ maxWidth: 220 }} value={previewLanguage} onChange={e => setPreviewLanguage(e.target.value)}>
                 {LANGUAGE_OPTIONS.map(option => (
                   <option key={option.value} value={option.value}>{option.label}</option>
@@ -573,15 +573,15 @@ export default function PoiForm() {
             </div>
             <div className="card-body">
               {previewLoading ? (
-                <div className="loading-center"><div className="spinner" /><span>Dang tai noi dung...</span></div>
+                <div className="loading-center"><div className="spinner" /><span>Đang tải nội dung...</span></div>
               ) : previewContent ? (
                 <div style={{ display: 'grid', gap: '0.75rem' }}>
                   <div>
-                    <div className="form-hint">Tieu de</div>
+                    <div className="form-hint">Tiêu đề</div>
                     <div style={{ fontWeight: 700 }}>{previewContent.title || '-'}</div>
                   </div>
                   <div>
-                    <div className="form-hint">Mo ta</div>
+                    <div className="form-hint">Mô tả</div>
                     <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{previewContent.description || '-'}</div>
                   </div>
                   <div>
@@ -589,7 +589,7 @@ export default function PoiForm() {
                     <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{previewContent.ttsScript || '-'}</div>
                   </div>
                   <div>
-                    <div className="form-hint">Hinh anh</div>
+                    <div className="form-hint">Hình ảnh</div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {parseImageUrls(previewContent.imageUrls).map((url, index) => (
                         <img
@@ -610,7 +610,7 @@ export default function PoiForm() {
                   </div>
                 </div>
               ) : (
-                <div className="alert alert-warning">Chua co noi dung cho ngon ngu nay.</div>
+                <div className="alert alert-warning">Chưa có nội dung cho ngôn ngữ này.</div>
               )}
             </div>
           </div>

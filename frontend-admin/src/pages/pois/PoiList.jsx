@@ -138,7 +138,7 @@ export default function PoiList() {
                         <button
                           className="btn btn-secondary btn-sm"
                           onClick={() => navigate(`/pois/${poi.id}`)}
-                          title="Xem noi dung POI"
+                          title="Xem nội dung POI"
                         >
                           Xem
                         </button>
@@ -154,9 +154,9 @@ export default function PoiList() {
                             className="btn btn-primary btn-sm"
                             onClick={() => approvePoi(poi.id)}
                             disabled={approving === poi.id}
-                            title="Duyet POI"
+                            title="Duyệt POI"
                           >
-                            {approving === poi.id ? 'Dang duyet...' : 'Duyet'}
+                            {approving === poi.id ? 'Đang duyệt...' : 'Duyệt'}
                           </button>
                         )}
                         <button
