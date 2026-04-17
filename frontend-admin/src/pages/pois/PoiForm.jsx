@@ -48,23 +48,6 @@ const DEFAULT_CONTENT = {
   title: '', description: '', ttsScript: '', imageUrls: '',
 };
 
-const LANGUAGE_OPTIONS = [
-  { value: 'vi', label: 'Tieng Viet' },
-  { value: 'en', label: 'English' },
-  { value: 'fr', label: 'Francais' },
-  { value: 'de', label: 'Deutsch' },
-  { value: 'ja', label: 'Japanese' },
-  { value: 'ko', label: 'Korean' },
-  { value: 'zh-CN', label: 'Chinese' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'ru', label: 'Russian' },
-  { value: 'it', label: 'Italian' },
-  { value: 'pt', label: 'Portuguese' },
-  { value: 'th', label: 'Thai' },
-  { value: 'ar', label: 'Arabic' },
-  { value: 'tr', label: 'Turkish' },
-  { value: 'id', label: 'Indonesian' },
-];
 
 function parseImageUrls(value) {
   if (!value) return [];
