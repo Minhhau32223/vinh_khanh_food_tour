@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useSession } from '../contexts/SessionContext';
+import { translateText } from '../utils/translateUI';
 import {
   clearOfflinePackage,
   downloadOfflinePackageFile,
@@ -33,6 +34,57 @@ export default function Settings() {
   const [capabilities, setCapabilities] = useState(null);
   const [offlineMeta, setOfflineMeta] = useState(() => getOfflinePackageMeta());
   const [downloadingOffline, setDownloadingOffline] = useState(false);
+
+  // translate cac ngon ngu khac
+  const [uiText, setUiText] = useState({});
+
+  // translate cac ngon ngu khac
+  useEffect(() => {
+    async function load() {
+      setUiText({
+        language: await translateText("Ngôn ngữ", language),
+        languageVoice: await translateText("Ngôn ngữ phát", language),
+
+        phienban: await translateText("Phiên bản", language),
+
+        session: await translateText("Phiên làm việc", language),
+        currentTour: await translateText("Tour hiện tại", language),
+        notJoined: await translateText("Không tham gia", language),
+        leaveTour: await translateText("Rời tour hiện tại", language),
+
+        gps: await translateText("GPS & Geofence", language),
+        autoPlay: await translateText("Tự động phát theo vị trí", language),
+        cooldown: await translateText("Cooldown mỗi POI", language),
+        gpsAccuracy: await translateText("Độ chính xác GPS", language),
+        enabled: await translateText("Bật", language),
+        high: await translateText("Cao", language),
+
+        device: await translateText("Thiết bị & Offline", language),
+        networkStatus: await translateText("Trạng thái mạng", language),
+        supported: await translateText("Hỗ trợ", language),
+        notSupported: await translateText("Không hỗ trợ", language),
+
+        storage: await translateText("Bộ nhớ trong", language),
+        cpuRam: await translateText("CPU / RAM tham khảo", language),
+        offlinePackage: await translateText("Gói offline", language),
+        notDownloaded: await translateText("Chưa tải", language),
+
+        downloading: await translateText("Đang tải...", language),
+        downloadOffline: await translateText("Tải gói offline", language),
+        clearOffline: await translateText("Xóa gói offline", language),
+
+        openQR: await translateText("Mở màn hình QR trigger", language),
+
+        about: await translateText("Thông tin ứng dụng", language),
+        version: await translateText("Phiên bản", language),
+        map: await translateText("Bản đồ", language),
+        backend: await translateText("Backend", language),
+
+        resetSession: await translateText("Đặt lại phiên làm việc", language),
+      });
+    }
+    load();
+  }, [language]);
 
   useEffect(() => {
     let cancelled = false;
@@ -114,9 +166,9 @@ export default function Settings() {
 
       {/* Language */}
       <div className="settings-section">
-        <div className="settings-header">Ngôn ngữ</div>
+        <div className="settings-header">{uiText.language || "Ngôn ngữ"}</div>
         <div className="settings-item">
-          <span className="settings-item-label">Ngôn ngữ phát</span>
+          <span className="settings-item-label">{uiText.languageVoice || "Ngôn ngữ phát"}</span>
           <select
             className="form-select"
             value={language}
@@ -134,7 +186,7 @@ export default function Settings() {
 
       {/* Session Info */}
       <div className="settings-section">
-        <div className="settings-header">📱 Phiên làm việc</div>
+        <div className="settings-header">📱 {uiText.session || "Phiên làm việc"}</div>
         <div className="settings-item">
           <span className="settings-item-label">Session ID</span>
           <span className="settings-item-value" style={{ fontFamily: 'monospace', fontSize: '0.7rem', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -142,8 +194,8 @@ export default function Settings() {
           </span>
         </div>
         <div className="settings-item">
-          <span className="settings-item-label">Tour hiện tại</span>
-          <span className="settings-item-value">{currentTourId ? `Tour #${currentTourId}` : 'Không tham gia'}</span>
+          <span className="settings-item-label">{uiText.currentTour || "Tour hiện tại"}</span>
+          <span className="settings-item-value">{currentTourId ? `Tour #${currentTourId}` : (uiText.notJoined || "Không tham gia")}</span>
         </div>
         {currentTourId && (
           <div className="settings-item">
@@ -151,7 +203,7 @@ export default function Settings() {
               onClick={leaveTour}
               style={{ background: 'none', border: 'none', color: 'var(--clr-primary)', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}
             >
-              Rời tour hiện tại
+              {uiText.leaveTour || "Rời tour hiện tại"}
             </button>
           </div>
         )}
@@ -159,30 +211,30 @@ export default function Settings() {
 
       {/* GPS Info */}
       <div className="settings-section">
-        <div className="settings-header">📍 GPS & Geofence</div>
+        <div className="settings-header">📍 {uiText.gps || "GPS & Geofence"}</div>
         <div className="settings-item">
-          <span className="settings-item-label">Tự động phát theo vị trí</span>
-          <span className="settings-item-value" style={{ color: 'var(--clr-success)' }}>✔ Bật</span>
+          <span className="settings-item-label">{uiText.autoPlay || "Tự động phát theo vị trí"}</span>
+          <span className="settings-item-value" style={{ color: 'var(--clr-success)' }}>✔ {uiText.enabled || "Bật"}</span>
         </div>
         <div className="settings-item">
-          <span className="settings-item-label">Cooldown mỗi POI</span>
-          <span className="settings-item-value">30 giây</span>
+          <span className="settings-item-label">{uiText.cooldown || "Cooldown mỗi POI"}</span>
+          <span className="settings-item-value">30s</span>
         </div>
         <div className="settings-item">
-          <span className="settings-item-label">Độ chính xác GPS</span>
-          <span className="settings-item-value">Cao</span>
+          <span className="settings-item-label">{uiText.gpsAccuracy || "Độ chính xác GPS"}</span>
+          <span className="settings-item-value">{uiText.high || "Cao"}</span>
         </div>
       </div>
 
       <div className="settings-section">
-        <div className="settings-header">Thiết bị & Offline</div>
+        <div className="settings-header">{uiText.device || "Thiết bị & Offline"}</div>
         <div className="settings-item">
-          <span className="settings-item-label">Trạng thái mạng</span>
+          <span className="settings-item-label">{uiText.networkStatus || "Trạng thái mạng"}</span>
           <span className="settings-item-value">{capabilities?.online ? 'Online' : 'Offline'}</span>
         </div>
         <div className="settings-item">
           <span className="settings-item-label">GPS</span>
-          <span className="settings-item-value">{capabilities?.geolocation ? 'Hỗ trợ' : 'Không hỗ trợ'}</span>
+          <span className="settings-item-value">{capabilities?.geolocation ? (uiText.supported || "Hỗ trợ") : (uiText.notSupported || "Không hỗ trợ")}</span>
         </div>
         <div className="settings-item">
           <span className="settings-item-label">Camera / QR</span>
@@ -247,7 +299,7 @@ export default function Settings() {
       <div className="settings-section">
         <div className="settings-header">ℹ️ Thông tin ứng dụng</div>
         <div className="settings-item">
-          <span className="settings-item-label">Phiên bản</span>
+          <span className="settings-item-label">{uiText.phienban || "Phiên bản"}</span>
           <span className="settings-item-value">1.0.0 MVP</span>
         </div>
         <div className="settings-item">
