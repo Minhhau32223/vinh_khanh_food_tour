@@ -72,10 +72,20 @@ public class PoiContentsServiceImpl implements PoiContentsService {
         String title = safeText(request.getTitle());
         String description = safeText(request.getDescription());
         String ttsScript = safeText(request.getTtsScript());
+
+        // Upload ảnh từ máy lên Cloudinary — nếu lỗi thì bỏ qua, dùng URL đã nhập
+        List<String> cloudinaryUploaded = new ArrayList<>();
+        try {
+            cloudinaryUploaded = uploadImages(poiId, images);
+        } catch (Exception ex) {
+            System.err.println("[Cloudinary] Upload images failed for poiId=" + poiId + ": " + ex.getMessage());
+            ex.printStackTrace();
+        }
+
         String imageUrls = writeImageUrls(mergeImageUrls(
                 request.getImageUrls(),
                 viContent.getImageUrls(),
-                uploadImages(poiId, images)
+                cloudinaryUploaded
         ));
         viContent.setTitle(title);
         viContent.setDescription(description);

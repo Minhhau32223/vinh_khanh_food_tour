@@ -142,22 +142,28 @@ public class PoiController {
 
     @PostMapping(value = "/{poiId}/content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
-    public ResponseEntity<List<PoiContentsResponse>> createPoiContentsMultipart(
+    public ResponseEntity<?> createPoiContentsMultipart(
             @PathVariable Long poiId,
             @RequestParam String title,
             @RequestParam(required = false, defaultValue = "") String description,
             @RequestParam String ttsScript,
             @RequestParam(required = false) String imageUrls,
             @RequestParam(required = false) List<MultipartFile> images
-    ) throws Exception {
-        PoiContentsRequest request = PoiContentsRequest.builder()
-                .poiId(poiId)
-                .title(title)
-                .description(description)
-                .ttsScript(ttsScript)
-                .imageUrls(imageUrls)
-                .build();
-        return ResponseEntity.ok(poiContentsService.createPoiContents(poiId, request, images));
+    ) {
+        try {
+            PoiContentsRequest request = PoiContentsRequest.builder()
+                    .poiId(poiId)
+                    .title(title)
+                    .description(description)
+                    .ttsScript(ttsScript)
+                    .imageUrls(imageUrls)
+                    .build();
+            return ResponseEntity.ok(poiContentsService.createPoiContents(poiId, request, images));
+        } catch (Exception ex) {
+            System.err.println("[PoiController] createPoiContentsMultipart error poiId=" + poiId + ": " + ex.getMessage());
+            ex.printStackTrace();
+            return ResponseEntity.status(500).body(java.util.Map.of("message", ex.getMessage() != null ? ex.getMessage() : "Lỗi server không xác định"));
+        }
     }
 
     @PostMapping(value = "/{poiId}/content", consumes = MediaType.APPLICATION_JSON_VALUE)
