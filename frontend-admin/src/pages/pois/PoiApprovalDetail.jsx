@@ -41,7 +41,7 @@ export default function PoiApprovalDetail() {
         ));
       }
     } catch {
-      alert('Khong the tai du lieu duyet POI');
+      alert('Không thể tải dữ liệu duyệt POI');
       navigate('/poi-approvals');
     } finally {
       setLoading(false);
@@ -63,7 +63,7 @@ export default function PoiApprovalDetail() {
       await api.patch(`/pois/${id}/approve`);
       await load();
     } catch {
-      alert('Khong the duyet POI');
+      alert('Không thể duyệt POI');
     } finally {
       setApproving(false);
     }
@@ -72,7 +72,7 @@ export default function PoiApprovalDetail() {
   return (
     <Layout
       title={poi ? `Duyet POI #${poi.id}` : 'Duyet POI'}
-      subtitle={poi?.name || 'Xem noi dung va ngon ngu da tao'}
+      subtitle={poi?.name || 'Xem nội dung và ngôn ngữ đã tạo'}
       actions={
         <div className="flex gap-2">
           <button className="btn btn-secondary" onClick={() => navigate('/poi-approvals')}>
@@ -80,25 +80,25 @@ export default function PoiApprovalDetail() {
           </button>
           {poi?.status !== 'APPROVED' && (
             <button className="btn btn-primary" onClick={handleApprove} disabled={approving}>
-              {approving ? 'Dang duyet...' : 'Duyet POI'}
+              {approving ? 'Đang duyệt...' : 'Duyệt POI'}
             </button>
           )}
         </div>
       }
     >
       {loading ? (
-        <div className="loading-center"><div className="spinner" /><span>Dang tai...</span></div>
+        <div className="loading-center"><div className="spinner" /><span>Đang tải...</span></div>
       ) : (
         <div style={{ display: 'grid', gap: '1rem' }}>
           <div className="card">
-            <div className="card-header"><span className="card-title">Thong tin POI</span></div>
+            <div className="card-header"><span className="card-title">Thông tin POI</span></div>
             <div className="card-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '1rem' }}>
               <div>
-                <div className="form-hint">Ten</div>
+                <div className="form-hint">Tên</div>
                 <div style={{ fontWeight: 700 }}>{poi?.name}</div>
               </div>
               <div>
-                <div className="form-hint">Trang thai</div>
+                <div className="form-hint">Trạng thái</div>
                 <span className={`badge ${poi?.status === 'APPROVED' ? 'badge-success' : 'badge-orange'}`}>{poi?.status}</span>
               </div>
               <div>
@@ -106,7 +106,7 @@ export default function PoiApprovalDetail() {
                 <div>{poi?.triggerRadius} m</div>
               </div>
               <div>
-                <div className="form-hint">Toa do</div>
+                <div className="form-hint">Tọa độ</div>
                 <div>{poi ? `${poi.latitude}, ${poi.longitude}` : '-'}</div>
               </div>
             </div>
@@ -114,7 +114,7 @@ export default function PoiApprovalDetail() {
 
           <div className="card">
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span className="card-title">Noi dung theo ngon ngu</span>
+              <span className="card-title">Nội dung theo ngôn ngữ</span>
               <select className="form-select" style={{ maxWidth: 220 }} value={selectedLanguage} onChange={e => setSelectedLanguage(e.target.value)}>
                 {contents.map(item => (
                   <option key={item.languageCode} value={item.languageCode}>
@@ -127,11 +127,11 @@ export default function PoiApprovalDetail() {
               {selectedContent ? (
                 <div style={{ display: 'grid', gap: '1rem' }}>
                   <div>
-                    <div className="form-hint">Tieu de</div>
+                    <div className="form-hint">Tiêu đề</div>
                     <div style={{ fontWeight: 700 }}>{selectedContent.title || '-'}</div>
                   </div>
                   <div>
-                    <div className="form-hint">Mo ta</div>
+                    <div className="form-hint">Mô tả</div>
                     <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{selectedContent.description || '-'}</div>
                   </div>
                   <div>
@@ -139,7 +139,7 @@ export default function PoiApprovalDetail() {
                     <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{selectedContent.ttsScript || '-'}</div>
                   </div>
                   <div>
-                    <div className="form-hint">Anh</div>
+                    <div className="form-hint">Ảnh</div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {parseImageUrls(selectedContent.imageUrls).map((url, index) => (
                         <img
@@ -160,7 +160,7 @@ export default function PoiApprovalDetail() {
                   </div>
                 </div>
               ) : (
-                <div className="alert alert-warning">POI nay chua co noi dung cho ngon ngu duoc chon.</div>
+                <div className="alert alert-warning">POI này chưa có nội dung cho ngôn ngữ được chọn.</div>
               )}
             </div>
           </div>

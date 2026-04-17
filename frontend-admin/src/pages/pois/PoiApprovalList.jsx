@@ -19,14 +19,14 @@ export default function PoiApprovalList() {
   }, []);
 
   return (
-    <Layout title="Yeu cau duyet POI" subtitle={`${pois.length} POI dang cho duyet`}>
+    <Layout title="Yêu cầu duyệt POI" subtitle={`${pois.length} POI đang chờ duyệtt`}>
       <div className="card">
         {loading ? (
-          <div className="loading-center"><div className="spinner" /><span>Dang tai...</span></div>
+          <div className="loading-center"><div className="spinner" /><span>Đang tải...</span></div>
         ) : pois.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-title">Khong co yeu cau duyet</div>
-            <div className="empty-state-desc">Tat ca POI hien da duoc xu ly.</div>
+            <div className="empty-state-title">Không có yêu cầu duyệt</div>
+            <div className="empty-state-desc">Tất cả POI hiện đã được xử lý.</div>
           </div>
         ) : (
           <div className="table-wrapper">
@@ -34,10 +34,10 @@ export default function PoiApprovalList() {
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Ten POI</th>
-                  <th>Trang thai</th>
-                  <th>Hoat dong</th>
-                  <th>Thao tac</th>
+                  <th>Tên POI</th>
+                  <th>Trạng thái</th>
+                  <th>Hoạt động</th>
+                  <th>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -55,7 +55,7 @@ export default function PoiApprovalList() {
                     </td>
                     <td>
                       <span className={`badge ${poi.isActive ? 'badge-success' : 'badge-danger'}`}>
-                        {poi.isActive ? 'Hoat dong' : 'Tat'}
+                        {poi.isActive ? 'Hoạt động' : 'Tắt'}
                       </span>
                     </td>
                     <td>
