@@ -2,17 +2,56 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useSession } from '../contexts/SessionContext';
+import { translateText } from '../utils/translateUI';
 
 export default function TourList() {
   const [tours, setTours] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { currentTourId, joinTour, leaveTour } = useSession();
+  const { currentTourId, joinTour, leaveTour, language } = useSession();
   const navigate = useNavigate();
+
+  // translate cac ngon ngu khac
+  const [uiText, setUiText] = useState({});
+
+  // translate cac ngon ngu khac
+  useEffect(() => {
+    async function load() {
+      const [
+        tourSystem,
+        noTours,
+        adminWillCreate,
+        poiList,
+        noPoi,
+        joinTourText,
+        joinedLeave,
+      ] = await Promise.all([
+        translateText("Tour Hệ Thống", language),
+        translateText("Chưa có tour nào", language),
+        translateText("Admin sẽ tạo tour sớm thôi!", language),
+        translateText("Danh sách địa điểm", language),
+        translateText("Chưa có địa điểm trong tour", language),
+        translateText("Tham gia Tour", language),
+        translateText("Đang tham gia · Rời tour", language),
+      ]);
+
+      setUiText({
+        tourSystem,
+        noTours,
+        adminWillCreate,
+        poiList,
+        noPoi,
+        joinTour: joinTourText,
+        joinedLeave,
+      });
+    }
+
+    load();
+  }, [language]);
 
   useEffect(() => {
     api.get('/tours')
       .then(r => setTours(r.data.filter(t => t.isActive !== false)))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -20,13 +59,13 @@ export default function TourList() {
 
   return (
     <div style={{ padding: '0 var(--sp-4) var(--sp-4)' }}>
-      <div className="section-title">🏛️ Tour Hệ Thống ({tours.length} tour)</div>
+      <div className="section-title">🏛️ {uiText.tourSystem || "Tour Hệ Thống"} ({tours.length} tour)</div>
 
       {tours.length === 0 ? (
         <div className="empty-page">
           <div className="empty-page-icon">🗺️</div>
-          <div className="empty-page-title">Chưa có tour nào</div>
-          <div className="empty-page-desc">Admin sẽ tạo tour sớm thôi!</div>
+          <div className="empty-page-title">{uiText.noTours || "Chưa có tour nào"}</div>
+          <div className="empty-page-desc">{uiText.adminWillCreate || "Admin sẽ tạo tour sớm thôi!"}</div>
         </div>
       ) : tours.map(tour => (
         <div key={tour.id} className="tour-card">
@@ -39,7 +78,7 @@ export default function TourList() {
             {tour.pois?.length > 0 ? (
               <>
                 <div style={{ fontSize: '0.75rem', color: 'var(--clr-muted)', marginBottom: 8, fontWeight: 600 }}>
-                  DANH SÁCH ĐỊA ĐIỂM ({tour.pois.length})
+                  {uiText.poiList || "DANH SÁCH ĐỊA ĐIỂM"} ({tour.pois.length})
                 </div>
                 {tour.pois.map((tp, i) => (
                   <div key={tp.poiId || i} className="tour-poi-item">
@@ -50,7 +89,7 @@ export default function TourList() {
               </>
             ) : (
               <div style={{ color: 'var(--clr-muted)', fontSize: '0.875rem', textAlign: 'center', padding: '1rem 0' }}>
-                Chưa có địa điểm trong tour
+                {uiText.noPoi || "Chưa có địa điểm trong tour"}
               </div>
             )}
 
@@ -61,7 +100,7 @@ export default function TourList() {
                 className="join-tour-btn active"
                 onClick={leaveTour}
               >
-                ✅ Đang tham gia · Rời tour
+                ✅ {uiText.joinedLeave || "Đang tham gia · Rời tour"}
               </button>
             ) : (
               <button
@@ -72,7 +111,7 @@ export default function TourList() {
                   navigate('/');
                 }}
               >
-                ▶ Tham gia Tour
+                ▶ {uiText.joinTour || "Tham gia Tour"}
               </button>
             )}
           </div>
