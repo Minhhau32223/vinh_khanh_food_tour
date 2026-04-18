@@ -41,48 +41,35 @@ export default function Settings() {
   // translate cac ngon ngu khac
   useEffect(() => {
     async function load() {
+      const [
+        languageText,
+        sessionText,
+        offlineText,
+        languageVoiceText,
+        currentTourText,
+        notJoinedText,
+        leaveTourText
+      ] = await Promise.all([
+        translateText("Ngôn ngữ", language),
+        translateText("Phiên làm việc", language),
+        translateText("Thiết bị & Offline", language),
+        translateText("Ngôn ngữ phát", language),
+        translateText("Tour hiện tại", language),
+        translateText("Không tham gia", language),
+        translateText("Rời tour hiện tại", language),
+      ]);
+
       setUiText({
-        language: await translateText("Ngôn ngữ", language),
-        languageVoice: await translateText("Ngôn ngữ phát", language),
-
-        phienban: await translateText("Phiên bản", language),
-
-        session: await translateText("Phiên làm việc", language),
-        currentTour: await translateText("Tour hiện tại", language),
-        notJoined: await translateText("Không tham gia", language),
-        leaveTour: await translateText("Rời tour hiện tại", language),
-
-        gps: await translateText("GPS & Geofence", language),
-        autoPlay: await translateText("Tự động phát theo vị trí", language),
-        cooldown: await translateText("Cooldown mỗi POI", language),
-        gpsAccuracy: await translateText("Độ chính xác GPS", language),
-        enabled: await translateText("Bật", language),
-        high: await translateText("Cao", language),
-
-        device: await translateText("Thiết bị & Offline", language),
-        networkStatus: await translateText("Trạng thái mạng", language),
-        supported: await translateText("Hỗ trợ", language),
-        notSupported: await translateText("Không hỗ trợ", language),
-
-        storage: await translateText("Bộ nhớ trong", language),
-        cpuRam: await translateText("CPU / RAM tham khảo", language),
-        offlinePackage: await translateText("Gói offline", language),
-        notDownloaded: await translateText("Chưa tải", language),
-
-        downloading: await translateText("Đang tải...", language),
-        downloadOffline: await translateText("Tải gói offline", language),
-        clearOffline: await translateText("Xóa gói offline", language),
-
-        openQR: await translateText("Mở màn hình QR trigger", language),
-
-        about: await translateText("Thông tin ứng dụng", language),
-        version: await translateText("Phiên bản", language),
-        map: await translateText("Bản đồ", language),
-        backend: await translateText("Backend", language),
-
-        resetSession: await translateText("Đặt lại phiên làm việc", language),
+        language: languageText,
+        session: sessionText,
+        offline: offlineText,
+        languageVoice: languageVoiceText,
+        currentTour: currentTourText,
+        notJoined: notJoinedText,
+        leaveTour: leaveTourText,
       });
     }
+
     load();
   }, [language]);
 
