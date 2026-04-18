@@ -48,7 +48,39 @@ export default function Settings() {
         languageVoiceText,
         currentTourText,
         notJoinedText,
-        leaveTourText
+        leaveTourText,
+        noCameraText,
+        AutoText,
+        enabledText,
+        cooldownText,
+        gpsAccuracyText,
+        highText,
+        networkStatusText,
+        supportedText,
+        notSupportedText,
+        //
+
+        storageLabelText,
+        cpuRamText,
+        offlinePackageText,
+        notDownloadedText,
+        canDownloadText,
+        cannotDownloadText,
+        downloadingText,
+        downloadOfflineText,
+        clearOfflineText,
+        openQRText,
+        aboutText,
+        versionText,
+        mapText,
+        backendText,
+        resetSessionText,
+        cameraOkText,
+        qrOkText,
+        qrFallbackText,
+        unknownText,
+        onlineText,
+        offlineText2,
       ] = await Promise.all([
         translateText("Ngôn ngữ", language),
         translateText("Phiên làm việc", language),
@@ -57,6 +89,37 @@ export default function Settings() {
         translateText("Tour hiện tại", language),
         translateText("Không tham gia", language),
         translateText("Rời tour hiện tại", language),
+        translateText("Không có camera",language),
+        translateText("Tự động phát theo vị trí",language),
+        translateText("Bật",language),
+        translateText("Cooldown mỗi POI",language),
+        translateText("Độ chính xác GPS",language),
+        translateText("Cao",language),
+        translateText("Trạng thái mạng",language),
+        translateText("Hỗ trợ",language),
+        translateText("Không hỗ trợ",language),
+
+        translateText("Bộ nhớ trong", language),
+        translateText("CPU / RAM tham khảo", language),
+        translateText("Gói offline", language),
+        translateText("Chưa tải", language),
+        translateText("Thiết bị đủ điều kiện để tải gói nội dung offline cho ngôn ngữ hiện tại.", language),
+        translateText("Nếu thiết bị không đủ tài nguyên hoặc đang offline, ứng dụng sẽ ưu tiên stream audio và nội dung trực tiếp.", language),
+        translateText("Đang tải...", language),
+        translateText("Tải gói offline", language),
+        translateText("Xóa gói offline", language),
+        translateText("Mở màn hình QR trigger", language),
+        translateText("Thông tin ứng dụng", language),
+        translateText("Phiên bản", language),
+        translateText("Bản đồ", language),
+        translateText("Backend", language),
+        translateText("Đặt lại phiên làm việc", language),
+        translateText("Camera OK", language),
+        translateText("QR scan OK", language),
+        translateText("QR scan fallback", language),
+        translateText("Không rõ", language),
+        translateText("Online", language),
+        translateText("Offline", language),
       ]);
 
       setUiText({
@@ -67,6 +130,39 @@ export default function Settings() {
         currentTour: currentTourText,
         notJoined: notJoinedText,
         leaveTour: leaveTourText,
+        noCamera: noCameraText,
+        Auto: AutoText,
+        enabled: enabledText,
+        cooldown: cooldownText,
+        gpsAccuracy: gpsAccuracyText,
+        high: highText,
+        networkStatus: networkStatusText,
+        supported: supportedText,
+        notSupported: notSupportedText,
+
+        //
+        storageLabel: storageLabelText,
+        cpuRam: cpuRamText,
+        offlinePackage: offlinePackageText,
+        notDownloaded: notDownloadedText,
+        canDownload: canDownloadText,
+        cannotDownload: cannotDownloadText,
+        downloading: downloadingText,
+        downloadOffline: downloadOfflineText,
+        clearOffline: clearOfflineText,
+        openQR: openQRText,
+        about: aboutText,
+        version: versionText,
+        map: mapText,
+        backend: backendText,
+        resetSession: resetSessionText,
+        cameraOk: cameraOkText,
+        qrOk: qrOkText,
+        qrFallback: qrFallbackText,
+        unknown: unknownText,
+        online: onlineText,
+        offlineLabel: offlineText2,
+
       });
     }
 
@@ -200,7 +296,7 @@ export default function Settings() {
       <div className="settings-section">
         <div className="settings-header">📍 {uiText.gps || "GPS & Geofence"}</div>
         <div className="settings-item">
-          <span className="settings-item-label">{uiText.autoPlay || "Tự động phát theo vị trí"}</span>
+          <span className="settings-item-label">{uiText.Auto || "Tự động phát theo vị trí"}</span>
           <span className="settings-item-value" style={{ color: 'var(--clr-success)' }}>✔ {uiText.enabled || "Bật"}</span>
         </div>
         <div className="settings-item">
@@ -214,10 +310,10 @@ export default function Settings() {
       </div>
 
       <div className="settings-section">
-        <div className="settings-header">{uiText.device || "Thiết bị & Offline"}</div>
+        <div className="settings-header">{uiText.offline || "Thiết bị & Offline"}</div>
         <div className="settings-item">
           <span className="settings-item-label">{uiText.networkStatus || "Trạng thái mạng"}</span>
-          <span className="settings-item-value">{capabilities?.online ? 'Online' : 'Offline'}</span>
+          <span className="settings-item-value">{capabilities?.online ? (uiText.online || 'Online') : (uiText.online || 'Online') }</span>
         </div>
         <div className="settings-item">
           <span className="settings-item-label">GPS</span>
@@ -226,33 +322,35 @@ export default function Settings() {
         <div className="settings-item">
           <span className="settings-item-label">Camera / QR</span>
           <span className="settings-item-value">
-            {capabilities?.camera ? 'Camera OK' : 'Không có camera'}
-            {capabilities?.qrScanner ? ' · QR scan OK' : ' · QR scan fallback'}
+            {capabilities?.camera ? (uiText.cameraOk || 'Camera OK') : (uiText.noCamera || 'Không có camera')}
+            {capabilities?.qrScanner
+              ? ` · ${uiText.qrOk || 'QR scan OK'}`
+              : ` · ${uiText.qrFallback || 'QR scan fallback'}`}
           </span>
         </div>
         <div className="settings-item">
-          <span className="settings-item-label">Bộ nhớ trong</span>
+          <span className="settings-item-label"> {uiText.storageLabel || "Bộ nhớ trong"} </span>
           <span className="settings-item-value">
-            {capabilities?.storageFreeMb != null ? `${capabilities.storageFreeMb} MB` : 'Không rõ'}
+            {capabilities?.storageFreeMb != null ? `${capabilities.storageFreeMb} MB` : (uiText.unknown || 'Không rõ')}
           </span>
         </div>
         <div className="settings-item">
-          <span className="settings-item-label">CPU / RAM tham khảo</span>
+          <span className="settings-item-label">{uiText.cpuRam || "CPU / RAM tham khảo"}</span>
           <span className="settings-item-value">
             {capabilities?.cpuCores || '-'} cores · {capabilities?.deviceMemoryGb || '-'} GB
           </span>
         </div>
         <div className="settings-item">
-          <span className="settings-item-label">Gói offline</span>
+          <span className="settings-item-label">{uiText.offlinePackage || "Gói offline"}</span>
           <span className="settings-item-value">
-            {offlineMeta ? `${offlineMeta.totalPois} POI · ${offlineMeta.language}` : 'Chưa tải'}
+            {offlineMeta ? `${offlineMeta.totalPois} POI · ${offlineMeta.language}` : (uiText.notDownloaded || 'Chưa tải')}
           </span>
         </div>
         <div className="settings-item" style={{ display: 'block' }}>
           <div style={{ fontSize: '0.8rem', color: 'var(--clr-muted)', marginBottom: 10 }}>
             {capabilities?.canDownloadOffline
-              ? 'Thiết bị đủ điều kiện để tải gói nội dung offline cho ngôn ngữ hiện tại.'
-              : 'Nếu thiết bị không đủ tài nguyên hoặc đang offline, ứng dụng sẽ ưu tiên stream audio và nội dung trực tiếp.'}
+              ? (uiText.canDownload || 'Thiết bị đủ điều kiện để tải gói nội dung offline cho ngôn ngữ hiện tại.')
+              : (uiText.cannotDownload || 'Nếu thiết bị không đủ tài nguyên hoặc đang offline, ứng dụng sẽ ưu tiên stream audio và nội dung trực tiếp.')}
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
@@ -260,14 +358,14 @@ export default function Settings() {
               disabled={!capabilities?.canDownloadOffline || downloadingOffline}
               style={{ background: 'var(--clr-primary)', border: 'none', color: '#fff', borderRadius: 12, padding: '0.75rem 1rem', fontWeight: 700, cursor: 'pointer' }}
             >
-              {downloadingOffline ? 'Đang tải...' : 'Tải gói offline'}
+              {downloadingOffline ? (uiText.downloading || 'Đang tải...') : (uiText.downloadOffline || 'Tải gói offline')}
             </button>
             <button
               onClick={handleClearOffline}
               disabled={!offlineMeta}
               style={{ background: '#fff', border: '1px solid var(--clr-border)', color: 'var(--clr-text)', borderRadius: 12, padding: '0.75rem 1rem', fontWeight: 600, cursor: 'pointer' }}
             >
-              Xóa gói offline
+              {uiText.clearOffline || "Xóa gói offline"}
             </button>
           </div>
         </div>
@@ -278,23 +376,23 @@ export default function Settings() {
           onClick={() => navigate('/qr')}
           style={{ background: 'none', border: 'none', color: 'var(--clr-primary)', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}
         >
-          Mở màn hình QR trigger
+          {uiText.openQR || "Mở màn hình QR trigger"}
         </button>
       </div>
 
       {/* About */}
       <div className="settings-section">
-        <div className="settings-header">ℹ️ Thông tin ứng dụng</div>
+        <div className="settings-header">ℹ️ {uiText.about || "Thông tin ứng dụng"}</div>
         <div className="settings-item">
-          <span className="settings-item-label">{uiText.phienban || "Phiên bản"}</span>
+          <span className="settings-item-label">{uiText.version || "Phiên bản"}</span>
           <span className="settings-item-value">1.0.0 MVP</span>
         </div>
         <div className="settings-item">
-          <span className="settings-item-label">Bản đồ</span>
+          <span className="settings-item-label">{uiText.map || "Bản đồ"}</span>
           <span className="settings-item-value">OpenStreetMap</span>
         </div>
         <div className="settings-item">
-          <span className="settings-item-label">Backend</span>
+          <span className="settings-item-label">{uiText.backend || "Backend"}</span>
           <span className="settings-item-value">Spring Boot + MySQL</span>
         </div>
       </div>
@@ -310,7 +408,7 @@ export default function Settings() {
           fontSize: '0.875rem'
         }}
       >
-        🔄 Đặt lại phiên làm việc
+        🔄 {uiText.resetSession || "Đặt lại phiên làm việc"}
       </button>
     </div>
   );
