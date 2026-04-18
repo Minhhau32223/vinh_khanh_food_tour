@@ -9,7 +9,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/client';
 import { useAudio } from '../contexts/AudioContext';
 import { useSession } from '../contexts/SessionContext';
-import { translateText } from '../utils/translateUI';
+import { translateText } from '../services/translateService';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function parseImages(raw) {
@@ -43,9 +43,9 @@ function PoiResultCard({ result, onReset }) {
   useEffect(() => {
     if (!result?.content?.audioFileUrl) return;
     play({
-      poiId: result.poi.id,
-      poiName: result.content.title || result.poi.name,
-      audioUrl: result.content.audioFileUrl,
+      poiId:       result.poi.id,
+      poiName:     result.content.title || result.poi.name,
+      audioUrl:    result.content.audioFileUrl,
       sessionId,
       language,
       triggerType: 'QR',
@@ -59,9 +59,9 @@ function PoiResultCard({ result, onReset }) {
     if (!result.content?.audioFileUrl) return;
     if (isThisPoi) { toggle(); return; }
     play({
-      poiId: result.poi.id,
-      poiName: result.content.title || result.poi.name,
-      audioUrl: result.content.audioFileUrl,
+      poiId:       result.poi.id,
+      poiName:     result.content.title || result.poi.name,
+      audioUrl:    result.content.audioFileUrl,
       sessionId, language, triggerType: 'QR',
     });
   };
@@ -132,22 +132,22 @@ function PoiResultCard({ result, onReset }) {
 
 // ─── Camera Scanner dùng jsQR ─────────────────────────────────────────────────
 function CameraScanner({ onScan, onError }) {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const streamRef = useRef(null);
-  const rafRef = useRef(null);
+  const videoRef   = useRef(null);
+  const canvasRef  = useRef(null);
+  const streamRef  = useRef(null);
+  const rafRef     = useRef(null);
   const [status, setStatus] = useState('starting'); // 'starting' | 'scanning' | 'found'
 
   useEffect(() => {
     let active = true;
 
     const tick = () => {
-      const video = videoRef.current;
+      const video  = videoRef.current;
       const canvas = canvasRef.current;
       if (!video || !canvas || !active) return;
 
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.width = video.videoWidth;
+        canvas.width  = video.videoWidth;
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -221,10 +221,10 @@ function CameraScanner({ onScan, onError }) {
         }}>
           {/* 4 góc đỏ */}
           {[
-            { top: -2, left: -2, borderTop: '4px solid #c0392b', borderLeft: '4px solid #c0392b' },
-            { top: -2, right: -2, borderTop: '4px solid #c0392b', borderRight: '4px solid #c0392b' },
-            { bottom: -2, left: -2, borderBottom: '4px solid #c0392b', borderLeft: '4px solid #c0392b' },
-            { bottom: -2, right: -2, borderBottom: '4px solid #c0392b', borderRight: '4px solid #c0392b' },
+            { top: -2, left: -2,   borderTop:    '4px solid #c0392b', borderLeft:  '4px solid #c0392b' },
+            { top: -2, right: -2,  borderTop:    '4px solid #c0392b', borderRight: '4px solid #c0392b' },
+            { bottom: -2, left: -2,borderBottom: '4px solid #c0392b', borderLeft:  '4px solid #c0392b' },
+            { bottom: -2, right: -2,borderBottom:'4px solid #c0392b', borderRight: '4px solid #c0392b' },
           ].map((s, i) => (
             <div key={i} style={{ position: 'absolute', width: 24, height: 24, borderRadius: 5, ...s }} />
           ))}
@@ -256,7 +256,7 @@ function CameraScanner({ onScan, onError }) {
       }}>
         {status === 'starting' && '⏳ Đang khởi động camera…'}
         {status === 'scanning' && '🔍 Hướng camera vào mã QR…'}
-        {status === 'found' && '✅ Đã nhận dạng QR!'}
+        {status === 'found'    && '✅ Đã nhận dạng QR!'}
       </div>
     </div>
   );
@@ -268,36 +268,14 @@ export default function QRPage() {
   const navigate = useNavigate();
   const { language } = useSession();
 
-  const [page, setPage] = useState('scanner'); // 'scanner' | 'result' | 'no_camera'
-  const [result, setResult] = useState(null);
+  const [page,    setPage]    = useState('scanner'); // 'scanner' | 'result' | 'no_camera'
+  const [result,  setResult]  = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error,   setError]   = useState('');
   const fileRef = useRef(null);
 
   // Có thể dùng getUserMedia không
   const hasGetUserMedia = !!navigator.mediaDevices?.getUserMedia;
-
-  const [uiText, setUiText] = useState({});
-
-  useEffect(() => {
-    async function load() {
-      setUiText({
-        errorQR: await translateText("Không tìm thấy nội dung QR này hoặc POI chưa sẵn sàng", language),
-        errorCamera: await translateText("Trình duyệt chưa được cấp quyền camera. Bạn vẫn có thể chọn ảnh QR từ thư viện", language),
-        errorQuetQR: await translateText("Quét mã QR", language),
-        subHeader: await translateText("Quét QR tại điểm tham quan để nghe thuyết minh tự động", language),
-        loading: await translateText("Đang tải nội dung…", language),
-        errorNoQRInImage: await translateText("Không tìm thấy mã QR trong ảnh. Hãy chọn ảnh rõ hơn hoặc chụp gần hơn.", language),
-        errorReadImage: await translateText("Không thể đọc ảnh. Vui lòng thử lại với ảnh khác.", language),
-        noCameraTitle: await translateText("Camera không khả dụng", language),
-        noCameraDesc: await translateText("Trình duyệt không hỗ trợ. Hãy chọn ảnh QR bên dưới.", language),
-        deniedTitle: await translateText("Camera bị từ chối", language),
-        deniedDesc: await translateText("Cho phép camera trong cài đặt trình duyệt rồi tải lại trang, hoặc chọn ảnh QR từ thư viện.", language),
-        retryCamera: await translateText("Thử lại camera", language),
-      });
-    }
-    load();
-  }, [language]);
 
   // Nếu URL có param qrValue → resolve ngay
   useEffect(() => {
@@ -316,7 +294,7 @@ export default function QRPage() {
       setResult(data);
     } catch {
       setResult(null);
-      setError(uiText.errorQR || "Không tìm thấy nội dung QR này hoặc POI chưa sẵn sàng");
+      setError('Không tìm thấy nội dung QR này hoặc POI chưa sẵn sàng.');
       setPage('scanner');
     } finally {
       setLoading(false);
@@ -335,7 +313,7 @@ export default function QRPage() {
     console.warn('[QRPage] camera error:', err?.name, err?.message);
     setPage('no_camera');
     if (err?.name === 'NotAllowedError') {
-      setError(uiText.errorCamera || "Trình duyệt chưa được cấp quyền camera. Bạn vẫn có thể chọn ảnh QR từ thư viện");
+      setError('Trình duyệt chưa được cấp quyền camera. Bạn vẫn có thể chọn ảnh QR từ thư viện.');
     }
   }, []);
 
@@ -349,7 +327,7 @@ export default function QRPage() {
     try {
       const imageBitmap = await createImageBitmap(file);
       const canvas = document.createElement('canvas');
-      canvas.width = imageBitmap.width;
+      canvas.width  = imageBitmap.width;
       canvas.height = imageBitmap.height;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       ctx.drawImage(imageBitmap, 0, 0);
@@ -362,11 +340,11 @@ export default function QRPage() {
       if (code?.data) {
         resolveQR(code.data);
       } else {
-        setError(uiText.errorNoQRInImage || 'Không tìm thấy mã QR trong ảnh. Hãy chọn ảnh rõ hơn hoặc chụp gần hơn');
+        setError('Không tìm thấy mã QR trong ảnh. Hãy chọn ảnh rõ hơn hoặc chụp gần hơn.');
       }
     } catch (err) {
       console.error('[QRPage] image decode error:', err);
-      setError(uiText.errorReadImage || 'Không thể đọc ảnh. Vui lòng thử lại với ảnh khác.');
+      setError('Không thể đọc ảnh. Vui lòng thử lại với ảnh khác.');
     }
   }, [resolveQR]);
 
@@ -385,10 +363,10 @@ export default function QRPage() {
         {/* Header */}
         <div style={{ paddingTop: 'var(--sp-4)', paddingBottom: 'var(--sp-4)' }}>
           <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--clr-text)', marginBottom: 3 }}>
-            📷 {uiText.errorQuetQR || "Quét mã QR"}
+            📷 Quét mã QR
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--clr-muted)' }}>
-            {uiText.subHeader || "Quét QR tại điểm tham quan để nghe thuyết minh tự động"}
+            Quét QR tại điểm tham quan để nghe thuyết minh tự động
           </div>
         </div>
 
@@ -396,7 +374,7 @@ export default function QRPage() {
         {loading && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center', padding: '2.5rem 0' }}>
             <div className="spinner" />
-            <span style={{ color: 'var(--clr-text-2)', fontSize: '0.9rem' }}>{uiText.loading || "Đang tải nội dung…"}</span>
+            <span style={{ color: 'var(--clr-text-2)', fontSize: '0.9rem' }}>Đang tải nội dung…</span>
           </div>
         )}
 

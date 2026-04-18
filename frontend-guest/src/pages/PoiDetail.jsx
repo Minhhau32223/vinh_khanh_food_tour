@@ -21,6 +21,20 @@ function AudioPlayer({ content, poi }) {
   const { play, stop, toggle, progress, currentTime, duration, fmt, isPaused, playing } = useAudio();
   const { sessionId, language } = useSession();
 
+  const [uiText, setUiText] = useState({});
+
+  useEffect(() => {
+    async function load() {
+      const [noAudio, audioTitle] = await Promise.all([
+        translateText("Chưa có audio thuyết minh", language),
+        translateText("Audio Thuyết Minh", language),
+      ]);
+
+      setUiText({ noAudio, audioTitle });
+    }
+    load();
+  }, [language]);
+
   const isThisPoi = playing?.poiId === poi?.id;
 
   const handlePlay = () => {
@@ -39,7 +53,7 @@ function AudioPlayer({ content, poi }) {
     return (
       <div className="audio-player" style={{ textAlign: 'center', color: 'var(--clr-muted)' }}>
         <div style={{ fontSize: '2rem', marginBottom: 8 }}>🎵</div>
-        <div style={{ fontSize: '0.875rem' }}>Chưa có audio thuyết minh</div>
+        <div style={{ fontSize: '0.875rem' }}>{uiText.noAudio || "Chưa có audio thuyết minh"}</div>
       </div>
     );
   }
@@ -47,10 +61,10 @@ function AudioPlayer({ content, poi }) {
   return (
     <div className="audio-player">
       <div className="audio-player-title">
-        🎙️ Audio Thuyết Minh
+        🎙️ {uiText.audioTitle || "Audio Thuyết Minh"}
         {isThisPoi && !isPaused && (
           <div className="sound-wave" style={{ marginLeft: 'auto' }}>
-            {[1,2,3,4].map(i => <div key={i} className="sound-bar" />)}
+            {[1, 2, 3, 4].map(i => <div key={i} className="sound-bar" />)}
           </div>
         )}
       </div>
@@ -92,6 +106,45 @@ export default function PoiDetail() {
   const [fallback, setFallback] = useState(false);
   const [offlineMode, setOfflineMode] = useState(false);
 
+  const [uiText, setUiText] = useState({});
+
+  useEffect(() => {
+    async function load() {
+      const [
+        loadingText,
+        offlineText,
+        fallbackText,
+        noDescription,
+        imagesText,
+        narrationText,
+        locationText,
+        noAudioText
+      ] = await Promise.all([
+        translateText("Đang tải…", language),
+        translateText("Đang mở nội dung từ gói offline đã tải.", language),
+        translateText("Nội dung tiếng Việt (chưa có bản dịch)", language),
+        translateText("Chưa có mô tả", language),
+        translateText("Hình ảnh", language),
+        translateText("Thuyết minh", language),
+        translateText("Vị trí", language),
+        translateText("Chưa có audio thuyết minh", language),
+      ]);
+
+      setUiText({
+        loading: loadingText,
+        offline: offlineText,
+        fallback: fallbackText,
+        noDescription,
+        images: imagesText,
+        narration: narrationText,
+        location: locationText,
+        noAudio: noAudioText,
+      });
+    }
+
+    load();
+  }, [language]);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
@@ -126,7 +179,7 @@ export default function PoiDetail() {
   if (loading) return (
     <div className="page-loading">
       <div className="spinner" />
-      <span>Đang tải…</span>
+      <span>{uiText.loading || "Đang tải…"}</span>
     </div>
   );
   if (!poi) return null;
@@ -154,7 +207,7 @@ export default function PoiDetail() {
       <div className="detail-body">
         {offlineMode && (
           <div style={{ marginBottom: '1rem', borderRadius: 14, padding: '0.8rem 1rem', background: 'rgba(52, 152, 219, 0.12)', color: '#1f618d', border: '1px solid rgba(52, 152, 219, 0.25)' }}>
-            Đang mở nội dung từ gói offline đã tải.
+            {uiText.offline || "Đang mở nội dung từ gói offline đã tải."}
           </div>
         )}
         {/* Meta badges */}
@@ -163,7 +216,7 @@ export default function PoiDetail() {
           <span className="badge badge-red">📏 Geofence {poi.triggerRadius}m</span>
           {fallback && (
             <span className="badge badge-orange" style={{ fontSize: '0.65rem' }}>
-              ⚠️ Nội dung tiếng Việt (chưa có bản dịch)
+              ⚠️ {uiText.fallback || "Nội dung tiếng Việt (chưa có bản dịch)"}
             </span>
           )}
         </div>
@@ -174,30 +227,30 @@ export default function PoiDetail() {
         ) : (
           <div className="empty-page" style={{ padding: '2rem 0' }}>
             <div className="empty-page-icon">📝</div>
-            <div className="empty-page-title">Chưa có mô tả</div>
+            <div className="empty-page-title">{uiText.noDescription || "Chưa có mô tả"}</div>
           </div>
         )}
 
         {/* Image Carousel */}
         {images.length > 1 && (
           <div>
-            <div className="section-title" style={{ padding: '0 0 0.5rem' }}>📸 Hình ảnh</div>
+            <div className="section-title" style={{ padding: '0 0 0.5rem' }}>📸 {uiText.images || "Hình ảnh"}</div>
             <div className="image-carousel">
               {images.map((url, i) => (
-                <img key={i} src={url} alt={`${i+1}`} className="carousel-img" />
+                <img key={i} src={url} alt={`${i + 1}`} className="carousel-img" />
               ))}
             </div>
           </div>
         )}
 
         {/* Audio Player */}
-        <div className="section-title" style={{ padding: '0 0 0.5rem' }}>🎙️ Thuyết minh</div>
+        <div className="section-title" style={{ padding: '0 0 0.5rem' }}>🎙️ {uiText.narration || "Thuyết minh"}</div>
         <AudioPlayer content={content} poi={poi} />
 
         {/* Location info */}
         <div style={{ background: 'var(--clr-surface-2)', borderRadius: 12, padding: '1rem', marginTop: '1rem' }}>
           <div style={{ fontSize: '0.75rem', color: 'var(--clr-muted)', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase' }}>
-            📍 Vị trí
+            📍 {uiText.location || "Vị trí"}
           </div>
           <div style={{ fontSize: '0.85rem', fontFamily: 'monospace' }}>
             {Number(poi.latitude).toFixed(6)}, {Number(poi.longitude).toFixed(6)}

@@ -11,6 +11,7 @@ import { loadOfflinePackage } from '../utils/offlinePackage';
 import { useSession } from '../contexts/SessionContext';
 import 'leaflet-routing-machine';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
+import { translateText } from '../services/translateService';
 
 // ─── Leaflet DivIcon – avoids all _getIconUrl / createIcon issues ────────────
 // Using DivIcon (SVG-based) instead of L.Icon so there's no image loading
@@ -55,7 +56,7 @@ function Routing({ points }) {
       fitSelectedRoutes: true,
       show: false,
 
-      createMarker: () => null  
+      createMarker: () => null
     }).addTo(map);
 
     return () => map.removeControl(routing);
@@ -87,8 +88,68 @@ export default function Home() {
   const { playing } = useAudio();
   const { haversineKm } = useGeofenceQueue({ pois, onNearby: setNearbyPoi });
 
+  const [uiText, setUiText] = useState({});
+
+  useEffect(() => {
+    async function load() {
+      const [
+        offline,
+        yourLocation,
+        playing,
+        viewDetail,
+        directions,
+        map,
+        list,
+        nearbyPlaces,
+        loading,
+        noPlaces,
+        foodPlaces,
+        nearbyTitle,
+        playingBadge,
+        nearYou,
+        recentPlaces
+      ] = await Promise.all([
+        translateText("Đang hiển thị dữ liệu offline đã tải trước đó.", language),
+        translateText("Vị trí của bạn", language),
+        translateText("Đang phát thuyết minh", language),
+        translateText("Xem chi tiết", language),
+        translateText("Mở chỉ đường", language),
+        translateText("Bản đồ", language),
+        translateText("Danh sách", language),
+        translateText("địa điểm gần bạn", language),
+        translateText("Đang tải…", language),
+        translateText("Không có địa điểm", language),
+        translateText("địa điểm ẩm thực", language),
+        translateText("Gần bạn", language),
+        translateText("Đang phát", language),
+        translateText("Gần bạn", language),
+        translateText("Địa điểm gần đây", language),
+      ]);
+
+      setUiText({
+        offline,
+        yourLocation,
+        playing,
+        viewDetail,
+        directions,
+        map,
+        list,
+        nearbyPlaces,
+        loading,
+        noPlaces,
+        foodPlaces,
+        nearbyTitle,
+        playingBadge,
+        nearYou,
+        recentPlaces
+      });
+    }
+
+    load();
+  }, [language]);
+
   // update
-  const { currentTourId } = useSession();
+  const { currentTourId, language } = useSession();
   const [tourPois, setTourPois] = useState([]);
 
   // update
