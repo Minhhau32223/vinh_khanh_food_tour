@@ -11,7 +11,7 @@ import { loadOfflinePackage } from '../utils/offlinePackage';
 import { useSession } from '../contexts/SessionContext';
 import 'leaflet-routing-machine';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
-import { translateText } from '../services/translateService';
+import { translateText } from '../utils/translateUI';
 
 // ─── Leaflet DivIcon – avoids all _getIconUrl / createIcon issues ────────────
 // Using DivIcon (SVG-based) instead of L.Icon so there's no image loading
@@ -88,6 +88,25 @@ export default function Home() {
   const { playing } = useAudio();
   const { haversineKm } = useGeofenceQueue({ pois, onNearby: setNearbyPoi });
 
+  // update
+  const { currentTourId, language } = useSession();
+  const [tourPois, setTourPois] = useState([]);
+
+  // update
+  useEffect(() => {
+    if (!currentTourId) {
+      return;
+    }
+    api.get(`/tours/${currentTourId}`)
+      .then(r => {
+        // Sắp xếp theo order_index rồi lấy tọa độ
+        const sorted = (r.data.pois || [])
+          .sort((a, b) => a.orderIndex - b.orderIndex);
+        setTourPois(sorted);
+      })
+      .catch(() => { });
+  }, [currentTourId]);
+
   const [uiText, setUiText] = useState({});
 
   useEffect(() => {
@@ -107,7 +126,10 @@ export default function Home() {
         nearbyTitle,
         playingBadge,
         nearYou,
-        recentPlaces
+        recentPlaces,
+        geofenceText,        // "Geofence"
+        loadingDots,         // "Đang tải..."
+        foodLocationText,
       ] = await Promise.all([
         translateText("Đang hiển thị dữ liệu offline đã tải trước đó.", language),
         translateText("Vị trí của bạn", language),
@@ -124,6 +146,10 @@ export default function Home() {
         translateText("Đang phát", language),
         translateText("Gần bạn", language),
         translateText("Địa điểm gần đây", language),
+        
+        translateText("Geofence", language),
+        translateText("Đang tải...", language),
+        translateText("Địa điểm ẩm thực", language),
       ]);
 
       setUiText({
@@ -141,31 +167,17 @@ export default function Home() {
         nearbyTitle,
         playingBadge,
         nearYou,
-        recentPlaces
+        recentPlaces,
+        geofence: geofenceText,
+        loadingDots,
+        foodLocation: foodLocationText,
       });
     }
 
     load();
   }, [language]);
 
-  // update
-  const { currentTourId, language } = useSession();
-  const [tourPois, setTourPois] = useState([]);
-
-  // update
-  useEffect(() => {
-    if (!currentTourId) {
-      return;
-    }
-    api.get(`/tours/${currentTourId}`)
-      .then(r => {
-        // Sắp xếp theo order_index rồi lấy tọa độ
-        const sorted = (r.data.pois || [])
-          .sort((a, b) => a.orderIndex - b.orderIndex);
-        setTourPois(sorted);
-      })
-      .catch(() => { });
-  }, [currentTourId]);
+  
 
   // update
   const activeTourPois = currentTourId ? tourPois : [];
@@ -225,7 +237,7 @@ export default function Home() {
           padding: '0.8rem 1rem', background: 'rgba(52, 152, 219, 0.12)',
           color: '#1f618d', border: '1px solid rgba(52, 152, 219, 0.25)',
         }}>
-          Đang hiển thị dữ liệu offline đã tải trước đó.
+          {uiText.offline || "Đang hiển thị dữ liệu offline đã tải trước đó."}
         </div>
       )}
 
@@ -242,7 +254,7 @@ export default function Home() {
               {/* User position */}
               {userPos && (
                 <Marker position={userPos} icon={userPosIcon}>
-                  <Popup>📍 Vị trí của bạn</Popup>
+                  <Popup>📍 {uiText.yourLocation || "Vị trí của bạn"} </Popup>
                 </Marker>
               )}
 
@@ -259,7 +271,7 @@ export default function Home() {
                       <div style={{ fontWeight: 700, marginBottom: 4 }}>{poi.name}</div>
                       {activePoiId === poi.id && (
                         <div style={{ fontSize: '0.8rem', color: '#7d3c98', fontWeight: 700 }}>
-                          🎙️ Đang phát thuyết minh
+                          🎙️ {uiText.playing || "Đang phát thuyết minh"}
                         </div>
                       )}
                       {distances[poi.id] != null && (
@@ -275,7 +287,7 @@ export default function Home() {
                           cursor: 'pointer', width: '100%',
                         }}
                       >
-                        Xem chi tiết →
+                        {uiText.viewDetail || "Xem chi tiết"} →
                       </button>
                       <a
                         href={`https://www.google.com/maps/dir/?api=1&destination=${Number(poi.latitude)},${Number(poi.longitude)}${userPos ? `&origin=${userPos[0]},${userPos[1]}` : ''}`}
@@ -283,7 +295,7 @@ export default function Home() {
                         rel="noreferrer"
                         style={{ display: 'inline-block', marginTop: 8, fontSize: '0.8rem' }}
                       >
-                        Mở chỉ đường ↗
+                        {uiText.directions || "Mở chỉ đường"} ↗
                       </a>
                     </div>
                   </Popup>
@@ -343,10 +355,10 @@ export default function Home() {
             {/* Floating map/list toggle */}
             <div className="view-toggle">
               <button className="view-toggle-btn active" onClick={() => setView('map')}>
-                🗺️ Bản đồ
+                🗺️ {uiText.map || "Bản đồ"}
               </button>
               <button className="view-toggle-btn" onClick={() => setView('list')}>
-                📋 Danh sách
+                📋 {uiText.list || "Danh sách"}
               </button>
             </div>
           </div>
@@ -358,27 +370,27 @@ export default function Home() {
         <div>
           <div style={{ position: 'relative' }}>
             <div className="view-toggle" style={{ position: 'relative', top: 0, right: 0, margin: '1rem 1rem 0 auto', width: 'fit-content' }}>
-              <button className="view-toggle-btn" onClick={() => setView('map')}>🗺️ Bản đồ</button>
-              <button className="view-toggle-btn active" onClick={() => setView('list')}>📋 Danh sách</button>
+              <button className="view-toggle-btn" onClick={() => setView('map')}>🗺️ {uiText.map || "Bản đồ"}</button>
+              <button className="view-toggle-btn active" onClick={() => setView('list')}>📋 {uiText.list || "Danh sách"} </button>
             </div>
           </div>
 
           <div className="poi-list">
             <div className="section-title">
               {userPos
-                ? `📍 ${sortedPois.length} địa điểm gần bạn`
-                : `🍜 ${pois.length} địa điểm ẩm thực`}
+                ? `📍 ${sortedPois.length} ${uiText.nearbyPlaces || "địa điểm gần bạn"}`
+                : `🍜 ${pois.length} ${uiText.foodPlaces || "địa điểm ẩm thực"}`}
             </div>
 
             {loading ? (
               <div className="page-loading">
                 <div className="spinner" />
-                <span>Đang tải…</span>
+                <span>{uiText.loading || "Đang tải…"}</span>
               </div>
             ) : sortedPois.length === 0 ? (
               <div className="empty-page">
                 <div className="empty-page-icon">📍</div>
-                <div className="empty-page-title">Không có địa điểm</div>
+                <div className="empty-page-title">{uiText.noPlaces || "Không có địa điểm"}</div>
               </div>
             ) : (
               sortedPois.map(poi => (
@@ -402,17 +414,17 @@ export default function Home() {
                       <div className="poi-card-dist">
                         {distances[poi.id] != null
                           ? `📏 ${distStr(distances[poi.id])}`
-                          : '📍 Dia diem am thuc'}
-                        {poi.triggerRadius && ` · Geofence ${poi.triggerRadius}m`}
+                          : `📍 ${uiText.foodLocation || "Địa điểm ẩm thực"}`}
+                        {poi.triggerRadius && ` · ${uiText.geofence || "Geofence"} ${poi.triggerRadius}m`}
                       </div>
                     </div>
                     <div className="poi-card-priority">
                       <span className="badge badge-orange">{'★'.repeat(poi.priority || 0)}</span>
                       {activePoiId === poi.id && (
-                        <span className="badge badge-info">Đang phát</span>
+                        <span className="badge badge-info">{uiText.playingBadge || "Đang phát"}</span>
                       )}
                       {nearbyPoi?.id === poi.id && (
-                        <span className="badge badge-red">📍 Gần bạn</span>
+                        <span className="badge badge-red">📍 {uiText.nearYou || "Gần bạn"}</span>
                       )}
                     </div>
                   </div>
@@ -426,11 +438,11 @@ export default function Home() {
       {/* Below-map horizontal POI strip */}
       {view === 'map' && (
         <div className="poi-list" style={{ paddingTop: '0.5rem' }}>
-          <div className="section-title">Địa điểm gần đây</div>
+          <div className="section-title">{uiText.recentPlaces || "Địa điểm gần đây"}</div>
           <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: 8 }}>
             {loading ? (
               <div style={{ color: 'var(--clr-muted)', fontSize: '0.85rem', padding: '0.5rem' }}>
-                Đang tải...
+                {uiText.loadingDots || "Đang tải..."}
               </div>
             ) : (
               sortedPois.slice(0, 6).map(poi => (

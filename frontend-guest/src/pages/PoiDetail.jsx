@@ -4,6 +4,8 @@ import api from '../api/client';
 import { useSession } from '../contexts/SessionContext';
 import { useAudio } from '../contexts/AudioContext';
 import { findOfflinePoiPackageItem } from '../utils/offlinePackage';
+import { translateText } from '../utils/translateUI';
+
 
 function parseImageUrls(value) {
   if (!value) return [];

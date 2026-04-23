@@ -81,6 +81,8 @@ export default function Settings() {
         unknownText,
         onlineText,
         offlineText2,
+        vinhkhanhText,
+        dulichText,
       ] = await Promise.all([
         translateText("Ngôn ngữ", language),
         translateText("Phiên làm việc", language),
@@ -120,6 +122,9 @@ export default function Settings() {
         translateText("Không rõ", language),
         translateText("Online", language),
         translateText("Offline", language),
+        translateText("Phố Ẩm Thực Vĩnh Khánh", language),
+        translateText("Hệ Thống Du Lịch Thông Minh · v1.0", language),
+
       ]);
 
       setUiText({
@@ -162,6 +167,8 @@ export default function Settings() {
         unknown: unknownText,
         online: onlineText,
         offlineLabel: offlineText2,
+        dulich: dulichText,
+        vinhkhanh: vinhkhanhText,
 
       });
     }
@@ -241,9 +248,9 @@ export default function Settings() {
         textAlign: 'center', marginBottom: '1.5rem'
       }}>
         <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>🍜</div>
-        <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>Phố Ẩm Thực Vĩnh Khánh</div>
+        <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{uiText.vinhkhanh || "Phố Ẩm Thực Vĩnh Khánh"}</div>
         <div style={{ opacity: 0.8, fontSize: '0.8rem', marginTop: 4 }}>
-          Hệ Thống Du Lịch Thông Minh · v1.0
+          {uiText.dulich || "Hệ Thống Du Lịch Thông Minh · v1.0"}
         </div>
       </div>
 

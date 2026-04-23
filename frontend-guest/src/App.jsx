@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { Component,useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { SessionProvider, useSession } from './contexts/SessionContext';
 import { AudioProvider, useAudio } from './contexts/AudioContext';
@@ -10,6 +10,8 @@ import Settings from './pages/Settings';
 //chi tiết poi
 import { useNavigate } from 'react-router-dom';
 
+//update
+import { translateText } from './utils/translateUI';
 // ─── Error Boundary ────────────────────────────────────────────────────────────
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -72,7 +74,7 @@ const LANGUAGE_OPTIONS = [
 ];
 
 // ─── Now Playing Bar ───────────────────────────────────────────────────────────
-function NowPlayingBar() {
+function NowPlayingBar({ uiText }) {
   const { playing, stop, toggle, progress, isPaused } = useAudio();
   const navigate = useNavigate();
   if (!playing) return null;
@@ -100,7 +102,7 @@ function NowPlayingBar() {
         onClick={handleGoToDetail} 
         style={{ cursor: 'pointer', flex: 1 }} // flex: 1 để chiếm không gian giữa
       >
-        <div className="now-playing-label">🎙️ Đang phát thuyết minh</div>
+        <div className="now-playing-label">🎙️ {uiText.nowPlayingLabel || 'Đang phát thuyết minh'}</div>
         <div className="now-playing-name">{playing.poiName}</div>
         <div style={{ marginTop: 4, height: 3, background: 'rgba(255,255,255,0.15)', borderRadius: 2 }}>
           <div style={{ width: `${progress}%`, height: '100%', background: 'var(--clr-primary-light)', borderRadius: 2, transition: 'width .3s' }} />
@@ -117,14 +119,14 @@ function NowPlayingBar() {
 }
 
 // ─── Geofence Toast ────────────────────────────────────────────────────────────
-function GeofenceToast() {
-  const { activeToast } = useSession();
+function GeofenceToast({ uiText }) {
+  const { activeToast, language} = useSession();
   if (!activeToast) return null;
   return (
     <div className="geofence-toast">
       <div className="geofence-toast-icon">📍</div>
       <div className="geofence-toast-info">
-        <div className="geofence-toast-label">Thông báo vị trí</div>
+        <div className="geofence-toast-label"> {uiText.locationToastLabel || 'Thông báo vị trí'} </div>
         <div className="geofence-toast-name">{activeToast}</div>
       </div>
     </div>
@@ -132,15 +134,15 @@ function GeofenceToast() {
 }
 
 // ─── App Header ────────────────────────────────────────────────────────────────
-function AppHeader() {
+function AppHeader({ uiText }) {
   const { language, updateLanguage } = useSession();
   return (
     <header className="app-header">
       <div className="header-brand">
         <span className="header-logo">🍜</span>
         <div>
-          <div className="header-title">Phố Vĩnh Khánh</div>
-          <div className="header-sub">Food Tour Guide</div>
+          <div className="header-title">{uiText.vinhkhanh || 'Phố Vĩnh Khánh'}</div>
+          <div className="header-sub">{uiText.Guide || 'Food Tour Guide'}</div>
         </div>
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
@@ -150,7 +152,7 @@ function AppHeader() {
           className="lang-btn"
           value={language}
           onChange={e => updateLanguage(e.target.value)}
-          style={{ border: 'none'  , background:'rgba(169, 175, 175, 0.13)', color: 'inherit', fontSize: '0.9rem', cursor: 'pointer' }}
+          style={{ border: 'none'  , background:'rgba(169, 175, 175, 0.13)', color: 'black', fontSize: '0.9rem', cursor: 'pointer' }}
         >
           {LANGUAGE_OPTIONS.map(option => (
             <option key={option.code} value={option.code}>{option.label}</option>
@@ -162,7 +164,7 @@ function AppHeader() {
 }
 
 // ─── Bottom Navigation ─────────────────────────────────────────────────────────
-function BottomNav() {
+function BottomNav({ uiText }) {
   const location = useLocation();
   const isDetail = location.pathname.startsWith('/poi/');
 
@@ -172,19 +174,19 @@ function BottomNav() {
     <nav className="bottom-nav">
       <NavLink id="nav-home" to="/" className={({ isActive }) => `nav-tab${isActive ? ' active' : ''}`} end>
         <span className="nav-tab-icon">🗺️</span>
-        <span>Khám phá</span>
+        <span> {uiText.navExplore || 'Khám phá'} </span>
       </NavLink>
       <NavLink id="nav-tours" to="/tours" className={({ isActive }) => `nav-tab${isActive ? ' active' : ''}`}>
         <span className="nav-tab-icon">🏛️</span>
-        <span>Tour</span>
+        <span> {uiText.navTour || 'Tour'} </span>
       </NavLink>
       <NavLink id="nav-qr" to="/qr" className={({ isActive }) => `nav-tab${isActive ? ' active' : ''}`}>
         <span className="nav-tab-icon">📷</span>
-        <span>QR</span>
+        <span> {uiText.navQR || 'QR'} </span>
       </NavLink>
       <NavLink id="nav-settings" to="/settings" className={({ isActive }) => `nav-tab${isActive ? ' active' : ''}`}>
         <span className="nav-tab-icon">⚙️</span>
-        <span>Cài đặt</span>
+        <span> {uiText.navSettings || 'Cài đặt'} </span>
       </NavLink>
     </nav>
   );
@@ -195,11 +197,51 @@ function AppShell() {
   const location = useLocation();
   const isDetail = location.pathname.startsWith('/poi/');
   const { playing } = useAudio();
+  const { language } = useSession();
+    //
+    const [uiText, setUiText] = useState({});
+    useEffect(() => {
+    async function load() {
+      const [
+        nowPlayingLabel,
+        locationToastLabel,
+        navExplore,
+        navTour,
+        navQR,
+        navSettings,
+        vinhkhanh,
+        Guide,
+      ] = await Promise.all([
+        translateText("Đang phát thuyết minh", language),
+        translateText("Thông báo vị trí", language),
+        translateText("Khám phá", language),
+        translateText("Tour", language),
+        translateText("QR", language),
+        translateText("Cài đặt", language),
+        translateText("Phố Vĩnh Khánh", language),
+        translateText("Food Tour Guide", language),
+
+      ]);
+  
+      setUiText({
+          nowPlayingLabel,
+          locationToastLabel,
+          navExplore,
+          navTour,
+          navQR,
+          navSettings,
+          vinhkhanh,
+          Guide,
+      });
+    }
+    load();
+  }, [language]);
+  //
 
   return (
     <>
-      {!isDetail && <AppHeader />}
-      <GeofenceToast />
+      {!isDetail && <AppHeader uiText={uiText} />}
+      <GeofenceToast uiText={uiText} />
 
       <div className={`page${playing ? ' with-player' : ''}`}>
         <Routes>
@@ -212,8 +254,8 @@ function AppShell() {
         </Routes>
       </div>
 
-      <NowPlayingBar />
-      <BottomNav />
+      <NowPlayingBar uiText={uiText} />
+      <BottomNav uiText={uiText} />
     </>
   );
 }
