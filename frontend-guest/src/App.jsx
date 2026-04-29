@@ -68,9 +68,6 @@ const LANGUAGE_OPTIONS = [
   { code: 'it', label: 'Italian' },
   { code: 'pt', label: 'Portuguese' },
   { code: 'th', label: 'Thai' },
-  { code: 'ar', label: 'Arabic' },
-  { code: 'tr', label: 'Turkish' },
-  { code: 'id', label: 'Indonesian' },
 ];
 
 // ─── Now Playing Bar ───────────────────────────────────────────────────────────
@@ -120,7 +117,7 @@ function NowPlayingBar({ uiText }) {
 
 // ─── Geofence Toast ────────────────────────────────────────────────────────────
 function GeofenceToast({ uiText }) {
-  const { activeToast, language} = useSession();
+  const { activeToast } = useSession();
   if (!activeToast) return null;
   return (
     <div className="geofence-toast">

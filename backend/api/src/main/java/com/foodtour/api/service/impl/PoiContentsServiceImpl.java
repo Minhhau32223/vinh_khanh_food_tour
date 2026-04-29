@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PoiContentsServiceImpl implements PoiContentsService {
     private static final List<String> SUPPORTED_LANGUAGES = List.of(
-            "vi", "en", "fr", "de", "ja", "ko", "zh-CN", "es", "ru", "it", "pt", "th", "ar", "tr", "id"
+            "vi", "en", "fr", "de", "ja", "ko", "zh-CN", "es", "ru", "it", "pt", "th"
     );
 
     private final PoiContentRepository poiContentRepository;

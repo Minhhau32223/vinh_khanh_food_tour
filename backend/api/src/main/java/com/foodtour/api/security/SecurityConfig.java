@@ -55,8 +55,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/audio/**", "/img/**").permitAll()
                         // Session: public (khách vãng lai không cần đăng nhập)
                         .requestMatchers("/api/sessions/**").permitAll()
+                        // WebSockets
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/analytics/dashboard").hasRole("ADMIN")
-                        // Analytics: public (guest log play events + top POI)
+                        // Analytics: public (guest log play events + top POI); online-devices is ADMIN via @PreAuthorize
                         .requestMatchers("/api/analytics/**").permitAll()
                         // POI read: PUBLIC (guest web + mobile không cần đăng nhập)
                         .requestMatchers(HttpMethod.GET, "/api/pois/**").permitAll()

@@ -85,7 +85,7 @@ export default function Home() {
   const [nearbyPoi, setNearbyPoi] = useState(null);
   const [offlineMode, setOfflineMode] = useState(false);
   const navigate = useNavigate();
-  const { playing } = useAudio();
+  const { playing, queueItems, autoplayBlocked } = useAudio();
   const { haversineKm } = useGeofenceQueue({ pois, onNearby: setNearbyPoi });
 
   // update
@@ -228,6 +228,7 @@ export default function Home() {
 
   const mapCenter = userPos || VN_CENTER;
   const activePoiId = playing?.poiId;
+  const visibleQueueItems = queueItems.filter(item => item.poiId !== playing?.poiId);
 
   return (
     <div>
@@ -238,6 +239,37 @@ export default function Home() {
           color: '#1f618d', border: '1px solid rgba(52, 152, 219, 0.25)',
         }}>
           {uiText.offline || "Đang hiển thị dữ liệu offline đã tải trước đó."}
+        </div>
+      )}
+
+      {(visibleQueueItems.length > 0 || autoplayBlocked) && (
+        <div
+          style={{
+            margin: '0 var(--sp-4) 0.75rem',
+            borderRadius: 14,
+            padding: '0.8rem 1rem',
+            background: 'rgba(230, 126, 34, 0.12)',
+            color: '#8a4b08',
+            border: '1px solid rgba(230, 126, 34, 0.25)',
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 6 }}>
+            Hang doi thuyet minh {visibleQueueItems.length > 0 ? `(${visibleQueueItems.length})` : ''}
+          </div>
+          {autoplayBlocked && (
+            <div style={{ fontSize: '0.82rem', marginBottom: visibleQueueItems.length > 0 ? 6 : 0 }}>
+              Cham man hinh 1 lan de mo khoa autoplay va phat tiep.
+            </div>
+          )}
+          {visibleQueueItems.length > 0 && (
+            <div style={{ display: 'grid', gap: 4, fontSize: '0.82rem' }}>
+              {visibleQueueItems.slice(0, 3).map((item, index) => (
+                <div key={`${item.poiId}-${item.queuedAt}`}>
+                  {index + 1}. {item.poiName} · uu tien {item.priority ?? 0} · {distStr(item.distanceKm ?? 0)}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

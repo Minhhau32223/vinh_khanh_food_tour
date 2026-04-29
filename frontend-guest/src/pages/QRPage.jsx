@@ -45,6 +45,7 @@ function PoiResultCard({ result, onReset, uiText = {} }) {
     play({
       poiId:       result.poi.id,
       poiName:     result.content.title || result.poi.name,
+      poiContentId: result.content.id ?? null,
       audioUrl:    result.content.audioFileUrl,
       sessionId,
       language,
@@ -61,6 +62,7 @@ function PoiResultCard({ result, onReset, uiText = {} }) {
     play({
       poiId:       result.poi.id,
       poiName:     result.content.title || result.poi.name,
+      poiContentId: result.content.id ?? null,
       audioUrl:    result.content.audioFileUrl,
       sessionId, language, triggerType: 'QR',
     });
@@ -352,6 +354,8 @@ export default function QRPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paramQrValue, language]);
 
+  const notFoundErrorText = uiText.notFoundError || 'Không tìm thấy nội dung QR này hoặc POI chưa sẵn sàng.';
+
   const resolveQR = useCallback(async (raw) => {
     const code = extractCode(raw);
     if (!code) return;
@@ -363,12 +367,12 @@ export default function QRPage() {
       setResult(data);
     } catch {
       setResult(null);
-      setError(uiText.notFoundError || 'Không tìm thấy nội dung QR này hoặc POI chưa sẵn sàng.');
+      setError(notFoundErrorText);
       setPage('scanner');
     } finally {
       setLoading(false);
     }
-  }, [language, uiText]);
+  }, [language, notFoundErrorText]);
 
   const handleReset = useCallback(() => {
     setResult(null);
@@ -384,7 +388,7 @@ export default function QRPage() {
     if (err?.name === 'NotAllowedError') {
       setError('Trình duyệt chưa được cấp quyền camera. Bạn vẫn có thể chọn ảnh QR từ thư viện.');
     }
-  }, [uiText]);
+  }, []);
 
   // ── Đọc QR từ ảnh bằng jsQR (canvas) ────────────────────────────────────────
   const handleImageFile = useCallback(async (e) => {

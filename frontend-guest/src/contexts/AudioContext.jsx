@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useRef, useCallback, useEffect } f
 import api from '../api/client';
 
 const AudioContext = createContext(null);
+const DISTANCE_EPSILON_KM = 0.00001;
 
 function normalizeAudioUrl(audioUrl) {
   if (!audioUrl) return audioUrl;
@@ -15,49 +16,77 @@ function normalizeAudioUrl(audioUrl) {
     }
     return parsed.toString();
   } catch {
-    // Keep original URL if parsing fails.
     return audioUrl;
   }
 }
 
+function compareQueueItems(a, b) {
+  const priorityDiff = Number(b.priority ?? 0) - Number(a.priority ?? 0);
+  if (priorityDiff !== 0) return priorityDiff;
+
+  const distanceDiff = Number(a.distanceKm ?? Number.MAX_SAFE_INTEGER) - Number(b.distanceKm ?? Number.MAX_SAFE_INTEGER);
+  if (Math.abs(distanceDiff) > DISTANCE_EPSILON_KM) return distanceDiff;
+
+  const poiIdDiff = Number(a.poiId ?? Number.MAX_SAFE_INTEGER) - Number(b.poiId ?? Number.MAX_SAFE_INTEGER);
+  if (poiIdDiff !== 0) return poiIdDiff;
+
+  return Number(a.queuedAt ?? 0) - Number(b.queuedAt ?? 0);
+}
+
 function sortQueue(queue) {
-  return queue.sort((a, b) => (
-    (b.priority - a.priority) ||
-    (a.distanceKm - b.distanceKm) ||
-    (a.queuedAt - b.queuedAt)
-  ));
+  return queue.sort(compareQueueItems);
 }
 
 export function AudioProvider({ children }) {
-  const [playing, setPlaying] = useState(null); // { poiId, poiName, url, historyId }
-  const [progress, setProgress] = useState(0);   // 0-100
+  const [playing, setPlaying] = useState(null);
+  const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isPaused, setIsPaused] = useState(true);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+  const [queueItems, setQueueItems] = useState([]);
   const audioRef = useRef(null);
   const queueRef = useRef([]);
   const playRef = useRef(null);
   const hasUserInteractionRef = useRef(false);
   const pendingAutoPlayRef = useRef(null);
 
-  const playNextFromQueue = useCallback(() => {
-    if (audioRef.current || queueRef.current.length === 0) return;
-    const next = queueRef.current.shift();
-    if (next && playRef.current) playRef.current(next);
+  const syncQueueState = useCallback(() => {
+    setQueueItems([
+      ...(pendingAutoPlayRef.current ? [pendingAutoPlayRef.current] : []),
+      ...queueRef.current,
+    ]);
   }, []);
+
+  const playNextFromQueue = useCallback(() => {
+    if (audioRef.current) return;
+
+    if (pendingAutoPlayRef.current && !hasUserInteractionRef.current) {
+      syncQueueState();
+      return;
+    }
+
+    const next = pendingAutoPlayRef.current || queueRef.current.shift();
+    pendingAutoPlayRef.current = null;
+    syncQueueState();
+    if (next && playRef.current) {
+      playRef.current(next);
+    }
+  }, [syncQueueState]);
 
   const play = useCallback(async ({
     poiId,
     poiName,
     audioUrl,
+    poiContentId = null,
     sessionId,
     language,
     triggerType = 'GEOFENCE',
+    priority = 0,
+    distanceKm = Number.MAX_SAFE_INTEGER,
   }) => {
-    if (!audioUrl) return;
+    if (!audioUrl) return { status: 'failed' };
 
-    // Stop current
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -72,7 +101,6 @@ export function AudioProvider({ children }) {
       setCurrentTime(audio.currentTime);
       setProgress(audio.duration ? (audio.currentTime / audio.duration) * 100 : 0);
     });
-
     audio.addEventListener('loadedmetadata', () => setDuration(audio.duration));
     audio.addEventListener('play', () => setIsPaused(false));
     audio.addEventListener('pause', () => setIsPaused(true));
@@ -81,11 +109,12 @@ export function AudioProvider({ children }) {
       setPlaying(null);
       setProgress(0);
       setCurrentTime(0);
+      setDuration(0);
       setIsPaused(true);
-      // Update duration
+      audioRef.current = null;
       if (historyId) {
         api.patch(`/analytics/play-event/${historyId}`, {
-          durationSeconds: Math.round(audio.currentTime)
+          durationSeconds: Math.round(audio.currentTime),
         }).catch(() => {});
       }
       setTimeout(() => playNextFromQueue(), 0);
@@ -96,39 +125,85 @@ export function AudioProvider({ children }) {
       setPlaying(null);
       setProgress(0);
       setCurrentTime(0);
+      setDuration(0);
       setIsPaused(true);
       setTimeout(() => playNextFromQueue(), 0);
     });
 
-    setPlaying({ poiId, poiName, url: resolvedAudioUrl, historyId });
-    setProgress(0); setCurrentTime(0); setIsPaused(false);
+    setPlaying({
+      poiId,
+      poiName,
+      poiContentId,
+      url: resolvedAudioUrl,
+      historyId,
+      priority,
+      distanceKm,
+    });
+    setProgress(0);
+    setCurrentTime(0);
+    setIsPaused(false);
 
     try {
       await audio.play();
       setAutoplayBlocked(false);
       pendingAutoPlayRef.current = null;
+      syncQueueState();
+
       try {
-        const { data } = await api.post('/analytics/play-event', {
-          sessionId, poiId, triggerType, language, playedAt: new Date().toISOString()
-        });
+        const requestPayload = {
+          sessionId,
+          poiId,
+          poiContentId,
+          triggerType,
+          language,
+          playedAt: new Date().toISOString(),
+        };
+        let data;
+        try {
+          ({ data } = await api.post('/analytics/play-event', requestPayload));
+        } catch {
+          ({ data } = await api.post('/analytics/play-event', {
+            ...requestPayload,
+            sessionId: null,
+          }));
+        }
         historyId = data.id;
-        setPlaying(current => current ? { ...current, historyId } : current);
+        setPlaying(current => (current ? { ...current, historyId } : current));
       } catch {
         // Analytics failure should not block playback.
       }
+
       return { status: 'playing' };
     } catch {
       audio.pause();
       audioRef.current = null;
       setPlaying(null);
+      setProgress(0);
+      setCurrentTime(0);
+      setDuration(0);
+      setIsPaused(true);
+
       if (triggerType === 'GEOFENCE' && !hasUserInteractionRef.current) {
-        pendingAutoPlayRef.current = { poiId, poiName, audioUrl: resolvedAudioUrl, sessionId, language, triggerType };
+        pendingAutoPlayRef.current = {
+          poiId,
+          poiName,
+          poiContentId,
+          audioUrl: resolvedAudioUrl,
+          sessionId,
+          language,
+          triggerType,
+          priority,
+          distanceKm,
+          queuedAt: Date.now(),
+        };
         setAutoplayBlocked(true);
+        syncQueueState();
         return { status: 'blocked' };
       }
+
       return { status: 'failed' };
     }
-  }, [playNextFromQueue]);
+  }, [playNextFromQueue, syncQueueState]);
 
   useEffect(() => {
     playRef.current = play;
@@ -137,21 +212,18 @@ export function AudioProvider({ children }) {
   useEffect(() => {
     const unlockAudio = () => {
       hasUserInteractionRef.current = true;
-      if (pendingAutoPlayRef.current && !audioRef.current && playRef.current) {
-        const pending = pendingAutoPlayRef.current;
-        pendingAutoPlayRef.current = null;
-        playRef.current(pending);
+      if (!audioRef.current) {
+        playNextFromQueue();
       }
     };
 
     window.addEventListener('pointerdown', unlockAudio, { passive: true });
     window.addEventListener('keydown', unlockAudio);
-
     return () => {
       window.removeEventListener('pointerdown', unlockAudio);
       window.removeEventListener('keydown', unlockAudio);
     };
-  }, []);
+  }, [playNextFromQueue]);
 
   const enqueue = useCallback(async payload => {
     const normalizedPayload = {
@@ -161,37 +233,28 @@ export function AudioProvider({ children }) {
       queuedAt: payload.queuedAt ?? Date.now(),
     };
 
-    const isCurrentPending = pendingAutoPlayRef.current?.poiId === normalizedPayload.poiId;
-
-    // If nothing is playing, start immediately.
-    if (!audioRef.current) {
-      if (normalizedPayload.triggerType === 'GEOFENCE' && !hasUserInteractionRef.current) {
-        if (!pendingAutoPlayRef.current) {
-          pendingAutoPlayRef.current = normalizedPayload;
-          setAutoplayBlocked(true);
-          return { status: 'blocked' };
-        }
-        if (isCurrentPending) return { status: 'ignored' };
-        const existsInQueue = queueRef.current.some(item => item.poiId === normalizedPayload.poiId);
-        if (!existsInQueue) {
-          queueRef.current.push(normalizedPayload);
-          sortQueue(queueRef.current);
-          setAutoplayBlocked(true);
-          return { status: 'queued' };
-        }
-        return { status: 'ignored' };
-      }
+    if (!audioRef.current && !pendingAutoPlayRef.current && hasUserInteractionRef.current) {
       return play(normalizedPayload);
     }
-    // Avoid duplicate queue entries for the same POI.
-    const exists = queueRef.current.some(item => item.poiId === normalizedPayload.poiId);
-    if (!exists) {
-      queueRef.current.push(normalizedPayload);
-      sortQueue(queueRef.current);
-      return { status: 'queued' };
+
+    const pendingSamePoi = pendingAutoPlayRef.current?.poiId === normalizedPayload.poiId;
+    const queuedSamePoi = queueRef.current.some(item => item.poiId === normalizedPayload.poiId);
+    if (pendingSamePoi || queuedSamePoi || playing?.poiId === normalizedPayload.poiId) {
+      return { status: 'ignored' };
     }
-    return { status: 'ignored' };
-  }, [play]);
+
+    if (normalizedPayload.triggerType === 'GEOFENCE' && !hasUserInteractionRef.current && !pendingAutoPlayRef.current && !audioRef.current) {
+      pendingAutoPlayRef.current = normalizedPayload;
+      setAutoplayBlocked(true);
+      syncQueueState();
+      return { status: 'blocked' };
+    }
+
+    queueRef.current.push(normalizedPayload);
+    sortQueue(queueRef.current);
+    syncQueueState();
+    return { status: 'queued' };
+  }, [play, playing?.poiId, syncQueueState]);
 
   const stop = useCallback(() => {
     if (audioRef.current) {
@@ -202,10 +265,17 @@ export function AudioProvider({ children }) {
         api.patch(`/analytics/play-event/${playing.historyId}`, { durationSeconds: dur }).catch(() => {});
       }
     }
-    setPlaying(null); setProgress(0); setCurrentTime(0);
-    setIsPaused(true);
+
+    pendingAutoPlayRef.current = null;
     queueRef.current = [];
-  }, [playing]);
+    setPlaying(null);
+    setProgress(0);
+    setCurrentTime(0);
+    setDuration(0);
+    setIsPaused(true);
+    setAutoplayBlocked(false);
+    syncQueueState();
+  }, [playing, syncQueueState]);
 
   const toggle = useCallback(() => {
     if (!audioRef.current) return;
@@ -213,10 +283,25 @@ export function AudioProvider({ children }) {
     else audioRef.current.pause();
   }, []);
 
-  const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const fmt = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 
   return (
-    <AudioContext.Provider value={{ playing, play, enqueue, stop, toggle, progress, currentTime, duration, fmt, isPaused, autoplayBlocked }}>
+    <AudioContext.Provider
+      value={{
+        playing,
+        play,
+        enqueue,
+        stop,
+        toggle,
+        progress,
+        currentTime,
+        duration,
+        fmt,
+        isPaused,
+        autoplayBlocked,
+        queueItems,
+      }}
+    >
       {children}
     </AudioContext.Provider>
   );

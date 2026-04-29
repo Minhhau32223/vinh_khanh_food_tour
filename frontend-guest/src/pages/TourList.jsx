@@ -108,7 +108,13 @@ export default function TourList() {
                 className="join-tour-btn"
                 onClick={() => {
                   joinTour(tour.id);
-                  navigate('/');
+                  // Focus về POI đầu tiên trong tour
+                  const firstPoi = tour.pois?.slice().sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))[0];
+                  if (firstPoi?.poiId) {
+                    navigate(`/poi/${firstPoi.poiId}`);
+                  } else {
+                    navigate('/');
+                  }
                 }}
               >
                 ▶ {uiText.joinTour || "Tham gia Tour"}

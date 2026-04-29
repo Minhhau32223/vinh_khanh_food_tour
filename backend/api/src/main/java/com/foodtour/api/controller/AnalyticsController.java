@@ -7,6 +7,7 @@ import com.foodtour.api.dto.PlayHistory.UpdateListeningDurationRequest;
 import com.foodtour.api.dto.analytics.AdminDashboardStatsResponse;
 import com.foodtour.api.dto.analytics.LogLocationRequest;
 import com.foodtour.api.service.AnalyticsService;
+import com.foodtour.api.service.OnlineCounterService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,15 +16,17 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/analytics")
 @RequiredArgsConstructor
 public class AnalyticsController {
     private final AnalyticsService analyticsService;
+    private final OnlineCounterService onlineCounterService;
 
     @PostMapping("/play-event")
-    public ResponseEntity<PlayHistoryResponse> logPlayHistory (@Valid @RequestBody LogPlayHistoryRequest request) {
+    public ResponseEntity<PlayHistoryResponse> logPlayHistory(@Valid @RequestBody LogPlayHistoryRequest request) {
         return new ResponseEntity<>(analyticsService.logPlayHistory(request), HttpStatus.CREATED);
     }
 
@@ -32,7 +35,7 @@ public class AnalyticsController {
             @PathVariable Long id,
             @RequestBody UpdateListeningDurationRequest request
     ) {
-        return new ResponseEntity<>(analyticsService.updateListeningDurationa(id,request), HttpStatus.CREATED);
+        return new ResponseEntity<>(analyticsService.updateListeningDurationa(id, request), HttpStatus.CREATED);
     }
 
     @GetMapping("/top-pois")
@@ -54,21 +57,31 @@ public class AnalyticsController {
         return ResponseEntity.ok(analyticsService.getAdminDashboardStats());
     }
 
-    /** PRD: 7d | 30d | all (hoặc 7 / 30). Giá trị không nhận dạng → all. */
+    /**
+     * Danh sách thiết bị đang online theo Redis TTL — chỉ Admin.
+     * Returns: { count: N, devices: ["deviceId1", "deviceId2", ...] }
+     */
+    @GetMapping("/online-devices")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> getOnlineDevices() {
+        try {
+            List<Map<String, Object>> devices = onlineCounterService.readOnlineDevices();
+            return ResponseEntity.ok(Map.of(
+                "count", devices.size(),
+                "devices", devices
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("count", 0, "devices", List.of()));
+        }
+    }
+
+    /** PRD: 7d | 30d | all (hoặc 7 / 30). */
     private static Integer parseTopPoisPeriodDays(String period) {
-        if (period == null || period.isBlank()) {
-            return null;
-        }
+        if (period == null || period.isBlank()) return null;
         String p = period.trim();
-        if ("all".equalsIgnoreCase(p)) {
-            return null;
-        }
-        if ("7d".equalsIgnoreCase(p) || "7".equals(p)) {
-            return 7;
-        }
-        if ("30d".equalsIgnoreCase(p) || "30".equals(p)) {
-            return 30;
-        }
+        if ("all".equalsIgnoreCase(p)) return null;
+        if ("7d".equalsIgnoreCase(p) || "7".equals(p)) return 7;
+        if ("30d".equalsIgnoreCase(p) || "30".equals(p)) return 30;
         return null;
     }
 }

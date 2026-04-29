@@ -5,6 +5,7 @@ import api from '../api/client';
 
 const COOLDOWN_MS = 30_000;
 const LOCATION_LOG_INTERVAL = 10_000;
+const DISTANCE_TIE_EPSILON_KM = 0.00001;
 
 function haversineKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
@@ -65,7 +66,8 @@ export function useGeofenceQueue({ pois, onNearby, enabled = true }) {
       .filter(({ poi, dist }) => dist <= (poi.triggerRadius || 100) / 1000)
       .sort((a, b) => (
         (Number(b.poi.priority ?? 0) - Number(a.poi.priority ?? 0)) ||
-        (a.dist - b.dist)
+        (Math.abs(a.dist - b.dist) > DISTANCE_TIE_EPSILON_KM ? (a.dist - b.dist) : 0) ||
+        (Number(a.poi.id ?? Number.MAX_SAFE_INTEGER) - Number(b.poi.id ?? Number.MAX_SAFE_INTEGER))
       ));
 
     if (candidates.length === 0) return;
@@ -91,6 +93,7 @@ export function useGeofenceQueue({ pois, onNearby, enabled = true }) {
       const result = await enqueue({
         poiId: poi.id,
         poiName: content.title || poi.name,
+        poiContentId: content.id ?? null,
         audioUrl: content.audioFileUrl,
         sessionId,
         language,

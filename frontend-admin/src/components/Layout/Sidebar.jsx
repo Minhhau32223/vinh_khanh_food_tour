@@ -6,7 +6,8 @@ const NAV = [
     section: 'Quản lý', items: [
       { to: '/pois', icon: '', label: 'Điểm tham quan (POI)' },
       { to: '/tours', icon: '', label: 'Tour du lịch' },
-      { to: '/qr', icon: '', label: 'Mã QR' },
+      { to: '/qr', icon: '', label: 'Mã QR POI' },
+      { to: '/guest-qr', icon: '', label: 'QR Truy cập Guest' },
     ]
   },
   {

@@ -11,6 +11,7 @@ import TourList from './pages/tours/TourList';
 import TourForm from './pages/tours/TourForm';
 import Analytics from './pages/Analytics';
 import QRManagementPage from './pages/QRManagementPage';
+import GuestQRGenerator from './pages/GuestQRGenerator';
 import Users from './pages/Users';
 
 function ProtectedRoute({ children }) {
@@ -42,6 +43,7 @@ function AppRoutes() {
       <Route path="/tours/:id/edit" element={<ProtectedRoute><TourForm /></ProtectedRoute>} />
       <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
       <Route path="/qr" element={<ProtectedRoute><QRManagementPage /></ProtectedRoute>} />
+      <Route path="/guest-qr" element={<ProtectedRoute><GuestQRGenerator /></ProtectedRoute>} />
       <Route path="/users" element={<AdminRoute><Users /></AdminRoute>} />
       <Route path="*" element={<Navigate to="/pois" replace />} />
     </Routes>

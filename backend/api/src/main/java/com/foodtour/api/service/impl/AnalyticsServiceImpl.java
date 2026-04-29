@@ -18,6 +18,7 @@ import com.foodtour.api.repository.TourRepository;
 import com.foodtour.api.repository.UserLocationRepository;
 import com.foodtour.api.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,7 +45,18 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .language(request.getLanguage())
                 .durationSeconds(request.getDurationSeconds())
                 .build();
-        playHistoryRepository.save(playHistory);
+        try {
+            playHistoryRepository.save(playHistory);
+        } catch (DataIntegrityViolationException ex) {
+            if (request.getSessionId() == null || request.getSessionId().isBlank()) {
+                throw ex;
+            }
+
+            // Preserve POI analytics even if the guest still holds a stale session id
+            // after the database has been rebuilt or reset.
+            playHistory.setSessionId(null);
+            playHistoryRepository.save(playHistory);
+        }
         return mapToPlayHistoryResponse(playHistory);
     }
 

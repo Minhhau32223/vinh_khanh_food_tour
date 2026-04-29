@@ -45,6 +45,7 @@ function AudioPlayer({ content, poi }) {
     play({
       poiId: poi.id,
       poiName: content.title || poi.name,
+      poiContentId: content.id ?? null,
       audioUrl: content.audioFileUrl,
       sessionId, language,
       triggerType: 'MANUAL',

@@ -5,6 +5,8 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Map;
+
 @Service
 public class TTSClient {
 
@@ -16,10 +18,13 @@ public class TTSClient {
     public byte[] generateAudio(String text, String lang) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
-        String body = String.format("{\"text\":\"%s\",\"lang\":\"%s\"}", text, lang);
-
-        HttpEntity<String> request = new HttpEntity<>(body, headers);
+        HttpEntity<Map<String, String>> request = new HttpEntity<>(
+                Map.of(
+                        "text", text == null ? "" : text,
+                        "lang", lang == null || lang.isBlank() ? "vi" : lang
+                ),
+                headers
+        );
 
         ResponseEntity<byte[]> response = restTemplate.exchange(
                 ttsUrl,

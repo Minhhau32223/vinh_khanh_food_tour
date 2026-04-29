@@ -23,9 +23,6 @@ const LANGUAGE_OPTIONS = [
   { code: 'it', label: 'Italian' },
   { code: 'pt', label: 'Portuguese' },
   { code: 'th', label: 'Thai' },
-  { code: 'ar', label: 'Arabic' },
-  { code: 'tr', label: 'Turkish' },
-  { code: 'id', label: 'Indonesian' },
 ];
 
 export default function Settings() {
