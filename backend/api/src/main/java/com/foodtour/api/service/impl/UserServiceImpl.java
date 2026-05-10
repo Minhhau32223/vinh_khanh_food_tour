@@ -43,6 +43,7 @@ public class UserServiceImpl implements UserService {
         return LoginResponse.builder()
                 .token(jwt)
                 .role(userDetails.getUser().getRole())
+                .userId(userDetails.getUser().getId())
                 .build();
     }
 
@@ -67,10 +68,12 @@ public class UserServiceImpl implements UserService {
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = tokenProvider.generateToken(authentication);
+        CustomUserDetails registeredDetails = (CustomUserDetails) authentication.getPrincipal();
 
         return LoginResponse.builder()
                 .token(jwt)
                 .role(request.getRole())
+                .userId(registeredDetails.getUser().getId())
                 .build();
     }
 

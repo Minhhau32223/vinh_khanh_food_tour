@@ -7,6 +7,7 @@ import com.foodtour.api.dto.PlayHistory.UpdateListeningDurationRequest;
 import com.foodtour.api.dto.PoiResponse;
 import com.foodtour.api.dto.analytics.AdminDashboardStatsResponse;
 import com.foodtour.api.dto.analytics.LogLocationRequest;
+import com.foodtour.api.dto.analytics.OwnerDashboardStatsResponse;
 import com.foodtour.api.dto.analytics.TriggerTypeCountResponse;
 import com.foodtour.api.entity.PlayHistory;
 import com.foodtour.api.entity.Poi;
@@ -148,6 +149,69 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .totalSessions(totalSessions)
                 .activeSessionsLast5Minutes(activeSessionsLast5Minutes)
                 .activeSessionsLast30Minutes(activeSessionsLast30Minutes)
+                .totalPlayEvents(totalPlayEvents)
+                .totalListeningSecondsRecorded(totalListening)
+                .avgListeningSecondsPerPlayWithDuration(avgPerPlay)
+                .playsByTriggerType(byTrigger)
+                .build();
+    }
+
+    @Override
+    public List<TopPoiResponse> getTop10PoisByOwner(Long ownerId, Integer periodDays) {
+        return playHistoryRepository.findTop10PoisByOwnerWithAvgDuration(ownerId, periodDays)
+                .stream()
+                .map(row -> {
+                    Long poiId = ((Number) row[0]).longValue();
+                    Long playCount = ((Number) row[1]).longValue();
+                    Double avgDuration = null;
+                    if (row[2] != null) {
+                        if (row[2] instanceof Number n) {
+                            avgDuration = n.doubleValue();
+                        }
+                    }
+                    Poi poi = poiRepository.findById(poiId).orElse(null);
+                    String poiName = poi != null ? poi.getName() : ("POI #" + poiId);
+                    return TopPoiResponse.builder()
+                            .poiId(poiId)
+                            .poiName(poiName)
+                            .avgDurationSeconds(avgDuration)
+                            .playCount(playCount)
+                            .poi(poi != null ? PoiResponse.builder()
+                                    .id(poi.getId())
+                                    .name(poi.getName())
+                                    .latitude(poi.getLatitude())
+                                    .longitude(poi.getLongitude())
+                                    .build() : null)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public OwnerDashboardStatsResponse getOwnerDashboardStats(Long ownerId) {
+        long totalPois = poiRepository.countByOwnerId(ownerId);
+        long pendingPois = poiRepository.countByStatusAndOwnerId("PENDING", ownerId);
+        long approvedPois = poiRepository.countByStatusAndOwnerId("APPROVED", ownerId);
+        long approvedActivePois = poiRepository.countByStatusAndIsActiveAndOwnerId("APPROVED", true, ownerId);
+
+        long totalPlayEvents = playHistoryRepository.countPlayEventsByOwner(ownerId);
+
+        Long sumDur = playHistoryRepository.sumDurationSecondsByOwner(ownerId);
+        long totalListening = sumDur != null ? sumDur : 0L;
+        Double avgPerPlay = playHistoryRepository.avgDurationSecondsByOwner(ownerId);
+
+        List<TriggerTypeCountResponse> byTrigger = new ArrayList<>();
+        for (Object[] row : playHistoryRepository.countGroupedByTriggerTypeForOwner(ownerId)) {
+            String tt = row[0] != null ? row[0].toString() : "UNKNOWN";
+            long cnt = ((Number) row[1]).longValue();
+            byTrigger.add(TriggerTypeCountResponse.builder().triggerType(tt).count(cnt).build());
+        }
+
+        return OwnerDashboardStatsResponse.builder()
+                .totalPois(totalPois)
+                .pendingPois(pendingPois)
+                .approvedPois(approvedPois)
+                .approvedActivePois(approvedActivePois)
                 .totalPlayEvents(totalPlayEvents)
                 .totalListeningSecondsRecorded(totalListening)
                 .avgListeningSecondsPerPlayWithDuration(avgPerPlay)

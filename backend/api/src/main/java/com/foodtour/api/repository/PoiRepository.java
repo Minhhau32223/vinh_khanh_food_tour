@@ -24,4 +24,10 @@ public interface PoiRepository extends JpaRepository<Poi, Long> {
     long countByStatus(String status);
 
     long countByStatusAndIsActive(String status, Boolean isActive);
+
+    long countByOwnerId(Long ownerId);
+
+    long countByStatusAndOwnerId(String status, Long ownerId);
+
+    long countByStatusAndIsActiveAndOwnerId(String status, Boolean isActive, Long ownerId);
 }

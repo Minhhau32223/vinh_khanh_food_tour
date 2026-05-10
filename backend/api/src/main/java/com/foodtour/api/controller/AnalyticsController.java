@@ -6,6 +6,8 @@ import com.foodtour.api.dto.PlayHistory.TopPoiResponse;
 import com.foodtour.api.dto.PlayHistory.UpdateListeningDurationRequest;
 import com.foodtour.api.dto.analytics.AdminDashboardStatsResponse;
 import com.foodtour.api.dto.analytics.LogLocationRequest;
+import com.foodtour.api.dto.analytics.OwnerDashboardStatsResponse;
+import com.foodtour.api.security.CustomUserDetails;
 import com.foodtour.api.service.AnalyticsService;
 import com.foodtour.api.service.OnlineCounterService;
 import jakarta.validation.Valid;
@@ -13,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -55,6 +58,25 @@ public class AnalyticsController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AdminDashboardStatsResponse> getAdminDashboard() {
         return ResponseEntity.ok(analyticsService.getAdminDashboardStats());
+    }
+
+    /** Tổng quan POI của owner — chỉ xem dữ liệu của chính mình. */
+    @GetMapping("/dashboard/owner")
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<OwnerDashboardStatsResponse> getOwnerDashboard(
+            @AuthenticationPrincipal CustomUserDetails principal) {
+        Long ownerId = principal.getUser().getId();
+        return ResponseEntity.ok(analyticsService.getOwnerDashboardStats(ownerId));
+    }
+
+    /** Top 10 POI của owner theo lượt phát. */
+    @GetMapping("/top-pois/owner")
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<List<TopPoiResponse>> getTop10PoisForOwner(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @RequestParam(name = "period", defaultValue = "all") String period) {
+        Long ownerId = principal.getUser().getId();
+        return ResponseEntity.ok(analyticsService.getTop10PoisByOwner(ownerId, parseTopPoisPeriodDays(period)));
     }
 
     /**

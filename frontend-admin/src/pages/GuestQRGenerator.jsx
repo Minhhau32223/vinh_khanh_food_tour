@@ -42,17 +42,17 @@ export default function GuestQRGenerator() {
 
   return (
     <Layout
-      title="QR Truy cap Guest"
-      subtitle="Chi can nhap 1 URL trang chu guest va tao QR"
+      title="QR Truy cập trang thuyết minh"
+      subtitle="Chỉ cần nhập URL của từng thuyết minh và QR sẽ được tạo tương ứng"
     >
       <div style={{ maxWidth: 720, margin: '0 auto', display: 'grid', gap: '1.25rem' }}>
         <div className="card">
           <div className="card-header">
-            <span className="card-title">URL trang chu Guest</span>
+            <span className="card-title">URL trang thuyết minh</span>
           </div>
           <div className="card-body" style={{ display: 'grid', gap: '1rem' }}>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label required">Nhap 1 URL day du</label>
+              <label className="form-label required">Nhập đường dẫn đầy đủ</label>
               <input
                 id="guest-home-url"
                 className="form-input"
@@ -79,7 +79,7 @@ export default function GuestQRGenerator() {
                 gap: 6,
               }}
             >
-              <div style={{ fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>Link nhung vao QR</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>Link nhúng vào QR</div>
               <code style={{ fontSize: '0.85rem', wordBreak: 'break-all' }}>
                 {fullUrl || 'Chua co URL hop le'}
               </code>
@@ -93,7 +93,7 @@ export default function GuestQRGenerator() {
                 onClick={handleGenerate}
                 disabled={!fullUrl}
               >
-                Tao QR
+                Tạo QR
               </button>
               <button
                 type="button"

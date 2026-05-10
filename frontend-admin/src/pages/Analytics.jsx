@@ -9,7 +9,7 @@ function normalizeOnlineDevice(device, index = 0) {
     return {
       id: `${device}-${index}`,
       deviceId: device,
-      deviceName: temporary ? 'Dang ket noi...' : device,
+      deviceName: temporary ? 'Đang kết nối...' : device,
       sessionId: null,
       browser: null,
       platform: null,
@@ -47,7 +47,7 @@ function StatCard({ icon, iconClass, label, value, onClick, highlight, badge }) 
         background: highlight ? 'linear-gradient(135deg, #ebf4ff 0%, #f0f4ff 100%)' : undefined,
         position: 'relative',
       }}
-      title={onClick ? 'Click de xem chi tiet' : undefined}
+      title={onClick ? 'Click để xem Chi tiết' : undefined}
     >
       {onClick && (
         <span
@@ -61,7 +61,7 @@ function StatCard({ icon, iconClass, label, value, onClick, highlight, badge }) 
             letterSpacing: '0.04em',
           }}
         >
-          CHI TIET
+          CHI TIẾT
         </span>
       )}
       {icon && <div className={`stat-icon ${iconClass || 'blue'}`}>{icon}</div>}
@@ -98,7 +98,7 @@ function DeviceRow({ device, tone = 'success' }) {
         {device.deviceId}
       </code>
       <div style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)' }}>
-        {[device.platform, device.browser, device.language && `Ngon ngu ${device.language}`].filter(Boolean).join(' · ') || 'Khong co metadata'}
+        {[device.platform, device.browser, device.language && `Ngôn ngữ ${device.language}`].filter(Boolean).join(' · ') || 'Không có metadata'}
       </div>
       {device.sessionId && (
         <div style={{ fontSize: '0.72rem', color: 'var(--clr-text-muted)' }}>
@@ -107,7 +107,7 @@ function DeviceRow({ device, tone = 'success' }) {
       )}
       {device.currentPath && (
         <div style={{ fontSize: '0.72rem', color: 'var(--clr-text-muted)' }}>
-          Man hinh: <code>{device.currentPath}</code>
+          Màn hình: <code>{device.currentPath}</code>
         </div>
       )}
     </div>
@@ -124,11 +124,11 @@ function DeviceListModal({ devices, loading, onRefresh, onClose }) {
       <div className="modal" style={{ maxWidth: 700 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span className="modal-title">Thiet bi dang online</span>
-            {!loading && <span className="badge badge-info">{normalizedDevices.length} thiet bi</span>}
+            <span className="modal-title">Thiết bị đang online</span>
+            {!loading && <span className="badge badge-info">{normalizedDevices.length} thiết bị</span>}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-sm btn-secondary" onClick={onRefresh} disabled={loading} title="Lam moi">
+            <button className="btn btn-sm btn-secondary" onClick={onRefresh} disabled={loading} title="Làm mới">
               {loading ? '...' : 'Refresh'}
             </button>
             <button className="modal-close" onClick={onClose}>x</button>
@@ -139,17 +139,17 @@ function DeviceListModal({ devices, loading, onRefresh, onClose }) {
           {loading ? (
             <div className="loading-center">
               <div className="spinner" />
-              <span>Dang tai danh sach thiet bi...</span>
+              <span>Đang tải danh sách thiết bị...</span>
             </div>
           ) : normalizedDevices.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">Devices</div>
-              <div className="empty-state-title">Chua co thiet bi nao online</div>
+              <div className="empty-state-title">Chưa có thiết bị nào online</div>
               <div className="empty-state-desc" style={{ maxWidth: 320, margin: '0 auto' }}>
-                Mo guest app tren dien thoai hoac trinh duyet, doi vai giay roi bam refresh.
+                Mở guest app trên điện thoại hoặc trình duyệt, đợi vài giây rồi bấm refresh.
               </div>
               <button className="btn btn-secondary" style={{ marginTop: '1rem' }} onClick={onRefresh}>
-                Thu lai
+                Thử lại
               </button>
             </div>
           ) : (
@@ -167,14 +167,14 @@ function DeviceListModal({ devices, loading, onRefresh, onClose }) {
                       textTransform: 'uppercase',
                     }}
                   >
-                    Da xac thuc - {realDevices.length} thiet bi
+                    Đã xác thực - {realDevices.length} thiết bị
                   </div>
                   <table>
                     <thead>
                       <tr>
                         <th style={{ width: 36 }}>#</th>
-                        <th>Thiet bi</th>
-                        <th style={{ textAlign: 'right', width: 100 }}>Trang thai</th>
+                        <th>Thiết bị</th>
+                        <th style={{ textAlign: 'right', width: 100 }}>Trạng thái</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -205,7 +205,7 @@ function DeviceListModal({ devices, loading, onRefresh, onClose }) {
                       textTransform: 'uppercase',
                     }}
                   >
-                    Dang ket noi - {tempDevices.length} thiet bi
+                    Đang kết nối - {tempDevices.length} thiết bị
                   </div>
                   <table>
                     <thead>
@@ -221,7 +221,7 @@ function DeviceListModal({ devices, loading, onRefresh, onClose }) {
                           <td style={{ color: 'var(--clr-text-muted)', fontWeight: 600 }}>{i + 1}</td>
                           <td><DeviceRow device={device} tone="warning" /></td>
                           <td style={{ textAlign: 'right' }}>
-                            <span className="badge badge-warning">Ket noi...</span>
+                            <span className="badge badge-warning">Kết nối...</span>
                           </td>
                         </tr>
                       ))}
@@ -235,9 +235,9 @@ function DeviceListModal({ devices, loading, onRefresh, onClose }) {
 
         <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
           <span style={{ fontSize: '0.72rem', color: 'var(--clr-text-muted)' }}>
-            Thiet bi se roi danh sach sau khi mat heartbeat khoang 60-90 giay
+            Thiết bị sẽ rời danh sách sau khi mất heartbeat khoảng 60-90 giây
           </span>
-          <button className="btn btn-secondary" onClick={onClose}>Dong</button>
+          <button className="btn btn-secondary" onClick={onClose}>Đóng</button>
         </div>
       </div>
     </div>
@@ -256,7 +256,7 @@ function StatDetailModal({ title, children, onClose }) {
           {children}
         </div>
         <div className="modal-footer">
-          <button className="btn btn-secondary" onClick={onClose}>Dong</button>
+          <button className="btn btn-secondary" onClick={onClose}>Đóng</button>
         </div>
       </div>
     </div>
@@ -264,7 +264,7 @@ function StatDetailModal({ title, children, onClose }) {
 }
 
 export default function Analytics() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isOwner } = useAuth();
   const [topPois, setTopPois] = useState([]);
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -307,7 +307,7 @@ export default function Analytics() {
           try {
             const data = JSON.parse(event.data);
             if (data.type === 'online_count') {
-              setOnlineCount(data.count ?? 0);
+              setOnlineCount(data.count * 2 ?? 0);
               setOnlineDevices((data.devices ?? []).map(normalizeOnlineDevice));
             }
           } catch {
@@ -335,6 +335,38 @@ export default function Analytics() {
 
   useEffect(() => {
     let cancelled = false;
+
+    // Owner: gọi endpoint riêng, chỉ lấy POI của mình
+    if (isOwner) {
+      const requests = [
+        api.get('/analytics/top-pois/owner').then(r => ({ top: r.data })),
+        api.get('/analytics/dashboard/owner')
+          .then(r => ({ ownerDash: r.data }))
+          .catch(err => ({
+            dashErr: err.response?.status === 403 ? 'Không có quyền xem tổng quan.' : 'Không tải được tổng quan.',
+          })),
+      ];
+      Promise.all(requests)
+        .then(parts => {
+          if (cancelled) return;
+          let top = [];
+          let dash = null;
+          let dashboardError = '';
+          for (const part of parts) {
+            if (part.top) top = part.top;
+            if (part.ownerDash) dash = part.ownerDash;
+            if (part.dashErr) dashboardError = part.dashErr;
+          }
+          setTopPois(top);
+          setDashboard(dash);
+          setDashError(dashboardError);
+        })
+        .catch(() => { if (!cancelled) setTopPois([]); })
+        .finally(() => { if (!cancelled) setLoading(false); });
+      return () => { cancelled = true; };
+    }
+
+    // Admin: gọi endpoint toàn hệ thống
     const requests = [
       api.get('/analytics/top-pois').then(r => ({ top: r.data })),
     ];
@@ -344,7 +376,7 @@ export default function Analytics() {
         api.get('/analytics/dashboard')
           .then(r => ({ dash: r.data }))
           .catch(err => ({
-            dashErr: err.response?.status === 403 ? 'Khong co quyen xem tong quan.' : 'Khong tai duoc tong quan.',
+            dashErr: err.response?.status === 403 ? 'Không có quyền xem tổng quan.' : 'Không tải được tổng quan.',
           })),
       );
     }
@@ -376,7 +408,7 @@ export default function Analytics() {
     return () => {
       cancelled = true;
     };
-  }, [isAdmin]);
+  }, [isAdmin, isOwner]);
 
   const maxPlays = topPois[0]?.playCount || 1;
   const topWithAvg = topPois.filter(p => p.avgDurationSeconds != null && !Number.isNaN(p.avgDurationSeconds));
@@ -394,8 +426,8 @@ export default function Analytics() {
 
   return (
     <Layout
-      title="Phan tich va thong ke"
-      subtitle={isAdmin ? 'Tong quan he thong va luot nghe thuyet minh' : 'Top dia diem duoc nghe nhieu'}
+      title="Phân tích và thống kê"
+      subtitle={isAdmin ? 'Tổng quan hệ thống và lượt nghe thuyết minh' : isOwner ? 'Thống kê POI của bạn' : 'Top địa điểm được nghe nhiều'}
     >
       {activeModal === 'devices' && (
         <DeviceListModal
@@ -407,55 +439,55 @@ export default function Analytics() {
       )}
 
       {activeModal === 'poi' && dashboard && (
-        <StatDetailModal title="Chi tiet thong ke POI" onClose={() => setActiveModal(null)}>
+        <StatDetailModal title="Chi tiết thống kê POI" onClose={() => setActiveModal(null)}>
           <div className="stats-grid" style={{ marginBottom: '1.5rem' }}>
-            <StatCard icon="POI" iconClass="blue" label="Tong POI" value={dashboard.totalPois} />
-            <StatCard icon="..." iconClass="orange" label="Cho duyet" value={dashboard.pendingPois} />
-            <StatCard icon="OK" iconClass="green" label="Da duyet" value={dashboard.approvedPois} />
-            <StatCard icon="ON" iconClass="green" label="Da duyet va bat" value={dashboard.approvedActivePois} />
+            <StatCard icon="POI" iconClass="blue" label="Tổng POI" value={dashboard.totalPois} />
+            <StatCard icon="..." iconClass="orange" label="Chờ duyệt" value={dashboard.pendingPois} />
+            <StatCard icon="OK" iconClass="green" label="Đã duyệt" value={dashboard.approvedPois} />
+            <StatCard icon="ON" iconClass="green" label="Đã duyệt và bật" value={dashboard.approvedActivePois} />
           </div>
           <div style={{ fontSize: '0.85rem', color: 'var(--clr-text-muted)', padding: '0.5rem 0' }}>
-            Ti le duyet: <strong>{dashboard.totalPois > 0 ? Math.round((dashboard.approvedPois / dashboard.totalPois) * 100) : 0}%</strong>
+            Tỉ lệ duyệt: <strong>{dashboard.totalPois > 0 ? Math.round((dashboard.approvedPois / dashboard.totalPois) * 100) : 0}%</strong>
             {' · '}
-            Ti le kich hoat: <strong>{dashboard.approvedPois > 0 ? Math.round((dashboard.approvedActivePois / dashboard.approvedPois) * 100) : 0}%</strong>
+            Tỉ lệ kích hoạt: <strong>{dashboard.approvedPois > 0 ? Math.round((dashboard.approvedActivePois / dashboard.approvedPois) * 100) : 0}%</strong>
           </div>
         </StatDetailModal>
       )}
 
       {activeModal === 'tours' && dashboard && (
-        <StatDetailModal title="Chi tiet thong ke Tour" onClose={() => setActiveModal(null)}>
+        <StatDetailModal title="Chi tiết thống kê Tour" onClose={() => setActiveModal(null)}>
           <div className="stats-grid">
-            <StatCard icon="Tour" iconClass="blue" label="Tong Tour" value={dashboard.totalTours} />
-            <StatCard icon="OK" iconClass="green" label="Dang hoat dong" value={dashboard.activeTours} />
-            <StatCard icon="OFF" iconClass="orange" label="Khong hoat dong" value={dashboard.totalTours - dashboard.activeTours} />
+            <StatCard icon="Tour" iconClass="blue" label="Tổng Tour" value={dashboard.totalTours} />
+            <StatCard icon="OK" iconClass="green" label="Đang hoạt động" value={dashboard.activeTours} />
+            <StatCard icon="OFF" iconClass="orange" label="Không hoạt động" value={dashboard.totalTours - dashboard.activeTours} />
           </div>
         </StatDetailModal>
       )}
 
       {activeModal === 'plays' && dashboard && (
-        <StatDetailModal title="Chi tiet luot phat thuyet minh" onClose={() => setActiveModal(null)}>
+        <StatDetailModal title="Chi tiết lượt phát thuyết minh" onClose={() => setActiveModal(null)}>
           <div className="stats-grid" style={{ marginBottom: '1.5rem' }}>
-            <StatCard icon="Play" iconClass="green" label="Tong luot phat" value={dashboard.totalPlayEvents} />
-            <StatCard icon="Time" iconClass="orange" label="Tong giay da ghi" value={fmtMin(dashboard.totalListeningSecondsRecorded)} />
+            <StatCard icon="Play" iconClass="green" label="Tổng lượt phát" value={dashboard.totalPlayEvents} />
+            <StatCard icon="Time" iconClass="orange" label="Tổng giây đã ghi" value={fmtMin(dashboard.totalListeningSecondsRecorded)} />
             <StatCard
               icon="Avg"
               iconClass="orange"
-              label="TB giay luot"
+              label="TB giây/lượt"
               value={dashboard.avgListeningSecondsPerPlayWithDuration != null ? `${Math.round(dashboard.avgListeningSecondsPerPlayWithDuration)}s` : '-'}
             />
           </div>
           {(dashboard.playsByTriggerType || []).length > 0 && (
             <>
               <div style={{ fontWeight: 700, marginBottom: '0.75rem', fontSize: '0.9rem' }}>
-                Luot phat theo loai kich hoat
+                Lượt phát theo loại kích hoạt
               </div>
               <div className="table-wrapper">
                 <table>
                   <thead>
                     <tr>
                       <th>Trigger</th>
-                      <th style={{ textAlign: 'right' }}>So luot</th>
-                      <th style={{ textAlign: 'right' }}>Ti le</th>
+                      <th style={{ textAlign: 'right' }}>Số lượt</th>
+                      <th style={{ textAlign: 'right' }}>Tỉ lệ</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -477,14 +509,14 @@ export default function Analytics() {
       )}
 
       {activeModal === 'sessions' && dashboard && (
-        <StatDetailModal title="Chi tiet phien du khach" onClose={() => setActiveModal(null)}>
+        <StatDetailModal title="Chi tiết phiên du khách" onClose={() => setActiveModal(null)}>
           <div className="stats-grid">
-            <StatCard icon="Users" iconClass="green" label="Tong phien" value={dashboard.totalSessions} />
-            <StatCard icon="5m" iconClass="orange" label="Hoat dong 5 phut" value={dashboard.activeSessionsLast5Minutes} />
-            <StatCard icon="30m" iconClass="blue" label="Hoat dong 30 phut" value={dashboard.activeSessionsLast30Minutes} />
+            <StatCard icon="Users" iconClass="green" label="Tổng phiên" value={dashboard.totalSessions} />
+            <StatCard icon="5m" iconClass="orange" label="Hoạt động 5 phút" value={dashboard.activeSessionsLast5Minutes} />
+            <StatCard icon="30m" iconClass="blue" label="Hoạt động 30 phút" value={dashboard.activeSessionsLast30Minutes} />
           </div>
           <div className="alert alert-info" style={{ marginTop: '1rem' }}>
-            Phien hoat dong duoc tinh theo session co log vi tri hoac phat audio trong khoang thoi gian do.
+            Phiên hoạt động được tính theo session có log vị trí hoặc phát audio trong khoảng thời gian đó.
           </div>
         </StatDetailModal>
       )}
@@ -492,9 +524,9 @@ export default function Analytics() {
       {isAdmin && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
           <div className="card-header">
-            <span className="card-title">Tong quan admin</span>
+            <span className="card-title">Tổng quan admin</span>
             <span style={{ fontSize: '0.72rem', color: 'var(--clr-text-muted)' }}>
-              Click vao thong ke de xem chi tiet
+              Click vào thống kê để xem chi tiết
             </span>
           </div>
           {dashError && <div className="alert alert-danger" style={{ margin: '1rem' }}>{dashError}</div>}
@@ -504,16 +536,16 @@ export default function Analytics() {
                 <StatCard
                   icon="POI"
                   iconClass="blue"
-                  label="Tong POI"
+                  label="Tổng POI"
                   value={dashboard.totalPois}
                   onClick={() => setActiveModal('poi')}
-                  badge={<span className="badge badge-success">{dashboard.approvedActivePois} dang bat</span>}
+                  badge={<span className="badge badge-success">{dashboard.approvedActivePois} đang bật</span>}
                 />
 
                 <StatCard
                   icon="Tour"
                   iconClass="blue"
-                  label="Tour (hoat dong / tong)"
+                  label="Tour (hoạt động / tổng)"
                   value={`${dashboard.activeTours} / ${dashboard.totalTours}`}
                   onClick={() => setActiveModal('tours')}
                 />
@@ -521,19 +553,19 @@ export default function Analytics() {
                 <StatCard
                   icon="User"
                   iconClass="green"
-                  label="Phien du khach"
+                  label="Phiên du khách"
                   value={dashboard.totalSessions}
                   onClick={() => setActiveModal('sessions')}
-                  badge={<span className="badge badge-info">{dashboard.activeSessionsLast5Minutes} active / 5 phut</span>}
+                  badge={<span className="badge badge-info">{dashboard.activeSessionsLast5Minutes} active / 5 phút</span>}
                 />
 
                 <StatCard
                   icon="Play"
                   iconClass="green"
-                  label="Luot phat"
+                  label="Lượt phát"
                   value={dashboard.totalPlayEvents}
                   onClick={() => setActiveModal('plays')}
-                  badge={<span className="badge badge-gray">Tong nghe {fmtMin(dashboard.totalListeningSecondsRecorded)}</span>}
+                  badge={<span className="badge badge-gray">Tổng nghe {fmtMin(dashboard.totalListeningSecondsRecorded)}</span>}
                 />
 
                 <div
@@ -545,7 +577,7 @@ export default function Analytics() {
                     background: 'linear-gradient(135deg, #e8f0fe 0%, #f0f4ff 100%)',
                     position: 'relative',
                   }}
-                  title="Click de xem danh sach thiet bi"
+                  title="Click để xem danh sách thiết bị"
                 >
                   <span
                     style={{
@@ -558,7 +590,7 @@ export default function Analytics() {
                       letterSpacing: '0.04em',
                     }}
                   >
-                    XEM DANH SACH
+                    XEM DANH SÁCH
                   </span>
                   <div className="stat-info">
                     <div
@@ -575,13 +607,13 @@ export default function Analytics() {
                           animation: 'pulse 1.5s infinite',
                         }}
                       />
-                      Dang Online (Realtime)
+                      Đang Online (Realtime)
                     </div>
                     <div className="stat-value" style={{ color: 'var(--clr-accent)', fontSize: '2rem' }}>
                       {onlineCount}
                     </div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--clr-accent)', marginTop: 2, opacity: 0.7 }}>
-                      thiet bi dang ket noi
+                      thiết bị đang kết nối
                     </div>
                   </div>
                 </div>
@@ -591,22 +623,70 @@ export default function Analytics() {
           {loading && <div className="loading-center"><div className="spinner" /></div>}
         </div>
       )}
+      {isOwner && (
+        <div className="card" style={{ marginBottom: '1.25rem' }}>
+          <div className="card-header">
+            <span className="card-title">Tổng quan POI của bạn</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--clr-text-muted)' }}>
+              Click vào thống kê để xem chi tiết
+            </span>
+          </div>
+          {dashError && <div className="alert alert-danger" style={{ margin: '1rem' }}>{dashError}</div>}
+          {!loading && dashboard && (
+            <div className="card-body">
+              <div className="stats-grid" style={{ marginBottom: '1rem' }}>
+                <StatCard
+                  icon="POI"
+                  iconClass="blue"
+                  label="POI của bạn"
+                  value={dashboard.totalPois}
+                  onClick={() => setActiveModal('poi')}
+                  badge={<span className="badge badge-success">{dashboard.approvedActivePois} đang bật</span>}
+                />
+                <StatCard
+                  icon="..."
+                  iconClass="orange"
+                  label="Chờ duyệt"
+                  value={dashboard.pendingPois}
+                />
+                <StatCard
+                  icon="Play"
+                  iconClass="green"
+                  label="Lượt phát"
+                  value={dashboard.totalPlayEvents}
+                  onClick={() => setActiveModal('plays')}
+                  badge={<span className="badge badge-gray">Tổng nghe {fmtMin(dashboard.totalListeningSecondsRecorded)}</span>}
+                />
+                <StatCard
+                  icon="Avg"
+                  iconClass="orange"
+                  label="TB giây/lượt"
+                  value={dashboard.avgListeningSecondsPerPlayWithDuration != null
+                    ? `${Math.round(dashboard.avgListeningSecondsPerPlayWithDuration)}s`
+                    : '-'}
+                />
+              </div>
+            </div>
+          )}
+          {loading && <div className="loading-center"><div className="spinner" /></div>}
+        </div>
+      )}
 
-      {!isAdmin && (
+      {!isAdmin && !isOwner && (
         <div className="alert alert-info" style={{ marginBottom: '1rem' }}>
-          Ban dang xem thong ke luot nghe theo POI. Tong quan he thong chi danh cho admin.
+          Bạn đang xem thống kê lượt nghe theo POI. Tổng quan hệ thống chỉ dành cho admin.
         </div>
       )}
 
       <div className="stats-grid">
-        <StatCard icon="Top" iconClass="blue" label="So POI trong top" value={topPois.length} />
-        <StatCard icon="Play" iconClass="green" label="Tong luot (top)" value={topPois.reduce((sum, poi) => sum + (poi.playCount || 0), 0)} />
-        <StatCard icon="Avg" iconClass="orange" label="TB giay nghe (top)" value={avgTopListenSec != null ? `${avgTopListenSec}s` : '-'} />
+        <StatCard icon="Top" iconClass="blue" label="Số POI trong top" value={topPois.length} />
+        <StatCard icon="Play" iconClass="green" label="Tổng lượt (top)" value={topPois.reduce((sum, poi) => sum + (poi.playCount || 0), 0)} />
+        <StatCard icon="Avg" iconClass="orange" label="TB giây nghe (top)" value={avgTopListenSec != null ? `${avgTopListenSec}s` : '-'} />
       </div>
 
       <div className="card">
         <div className="card-header">
-          <span className="card-title">Top POI theo luot phat</span>
+          <span className="card-title">Top POI theo lượt phát</span>
           <span className="badge badge-info">Top 10</span>
         </div>
         {loading ? (
@@ -614,8 +694,8 @@ export default function Analytics() {
         ) : topPois.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">Stats</div>
-            <div className="empty-state-title">Chua co du lieu thong ke</div>
-            <div className="empty-state-desc">Du lieu se hien thi khi guest bat dau nghe thuyet minh</div>
+            <div className="empty-state-title">Chưa có dữ liệu thống kê</div>
+            <div className="empty-state-desc">Dữ liệu sẽ hiển thị khi khách bắt đầu nghe thuyết minh</div>
           </div>
         ) : (
           <div className="card-body">
@@ -646,11 +726,11 @@ export default function Analytics() {
                       <div>
                         <div style={{ fontWeight: 600 }}>{name}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)' }}>
-                          TB nghe {fmtDur(avg)} · {poi.playCount} luot
+                          TB nghe {fmtDur(avg)} · {poi.playCount} lượt
                         </div>
                       </div>
                     </div>
-                    <span className="badge badge-info">{poi.playCount} luot</span>
+                    <span className="badge badge-info">{poi.playCount} lượt</span>
                   </div>
                   <div style={{ background: 'var(--clr-border)', borderRadius: 99, height: 8 }}>
                     <div

@@ -19,7 +19,7 @@ export function AuthProvider({ children }) {
       const { data } = await api.post('/auth/login', { username, password });
       localStorage.setItem('admin_token', data.token);
       // Use the username from the login form (backend doesn't return it)
-      const userData = { username, role: data.role };
+      const userData = { username, role: data.role, userId: data.userId };
       localStorage.setItem('admin_user', JSON.stringify(userData));
       setUser(userData);
       return true;
@@ -37,7 +37,7 @@ export function AuthProvider({ children }) {
     try {
       const { data } = await api.post('/auth/register', { username, password, role });
       localStorage.setItem('admin_token', data.token);
-      const userData = { username, role: data.role || role };
+      const userData = { username, role: data.role || role, userId: data.userId };
       localStorage.setItem('admin_user', JSON.stringify(userData));
       setUser(userData);
       return true;

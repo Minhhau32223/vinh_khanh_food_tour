@@ -36,7 +36,17 @@ export default function Sidebar() {
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
-  const allNav = isAdmin ? [...NAV, ...ADMIN_NAV] : NAV;
+  const allNav = isAdmin
+    ? [...NAV, ...ADMIN_NAV]
+    : NAV.map(section => {
+      if (section.section === 'Quản lý') {
+        return {
+          ...section,
+          items: section.items.filter(item => item.to !== '/tours' && item.to !== '/guest-qr')
+        };
+      }
+      return section;
+    });
 
   return (
     <aside className="sidebar">

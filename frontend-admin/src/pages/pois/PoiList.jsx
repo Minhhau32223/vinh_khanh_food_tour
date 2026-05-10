@@ -48,7 +48,7 @@ export default function PoiList() {
       await api.patch(`/pois/${id}/approve`);
       load();
     } catch {
-      alert('Loi khi duyet POI');
+      alert('Lỗi khi duyệt POI');
     } finally {
       setApproving(null);
     }
@@ -118,7 +118,7 @@ export default function PoiList() {
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
                         <span className={`badge ${poi.status === 'APPROVED' ? 'badge-success' : 'badge-warning'}`}>
-                          {poi.status === 'APPROVED' ? 'Da duyet' : poi.status || 'Cho duyet'}
+                          {poi.status === 'APPROVED' ? 'Đã duyệt' : poi.status === 'PENDING' ? 'Chờ duyệt' : poi.status || 'Chờ duyệt'}
                         </span>
                       <button
                         className={`badge ${poi.isActive ? 'badge-success' : 'badge-danger'}`}

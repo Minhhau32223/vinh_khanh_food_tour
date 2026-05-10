@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  * ─────────────────────────────────────────────────────
  * Bước 1: Lấy tất cả POI active từ DB
  * Bước 2: Với mỗi POI, tính khoảng cách tới điểm tìm kiếm
- *         bằng công thức HAVERSINE (chính xác trên mặt cầu)
+ * bằng công thức HAVERSINE (chính xác trên mặt cầu)
  * Bước 3: Lọc những POI có distance <= radiusKm
  * Bước 4: Sắp xếp theo khoảng cách tăng dần (gần nhất trước)
  * Bước 5: Thêm distanceKm vào response
@@ -76,9 +76,9 @@ public class PoiServiceImpl implements PoiService {
      * Tìm POI gần tọa độ (lat, lng) trong radius (km).
      *
      * Công thức Haversine:
-     *   a = sin²(Δlat/2) + cos(lat1) × cos(lat2) × sin²(Δlng/2)
-     *   c = 2 × atan2(√a, √(1−a))
-     *   d = R × c  (R = 6371 km)
+     * a = sin²(Δlat/2) + cos(lat1) × cos(lat2) × sin²(Δlng/2)
+     * c = 2 × atan2(√a, √(1−a))
+     * d = R × c (R = 6371 km)
      *
      * Đơn vị đầu vào: độ (degree), phải convert sang radian trước khi tính.
      */
@@ -94,8 +94,7 @@ public class PoiServiceImpl implements PoiService {
                     double distance = haversineDistance(
                             searchLat, searchLng,
                             poi.getLatitude().doubleValue(),
-                            poi.getLongitude().doubleValue()
-                    );
+                            poi.getLongitude().doubleValue());
                     // Thêm distance vào POI để dùng sau
                     return new PoiWithDistance(poi, distance);
                 })
@@ -139,13 +138,20 @@ public class PoiServiceImpl implements PoiService {
             throw new AccessDeniedException("Owner can only edit own POI");
         }
 
-        if (request.getName() != null) poi.setName(request.getName());
-        if (request.getLatitude() != null) poi.setLatitude(request.getLatitude());
-        if (request.getLongitude() != null) poi.setLongitude(request.getLongitude());
-        if (request.getTriggerRadius() != null) poi.setTriggerRadius(request.getTriggerRadius());
-        if (request.getPriority() != null) poi.setPriority(request.getPriority());
-        if (isAdmin && request.getIsActive() != null) poi.setIsActive(request.getIsActive());
-        if (isAdmin && request.getOwnerId() != null) poi.setOwnerId(request.getOwnerId());
+        if (request.getName() != null)
+            poi.setName(request.getName());
+        if (request.getLatitude() != null)
+            poi.setLatitude(request.getLatitude());
+        if (request.getLongitude() != null)
+            poi.setLongitude(request.getLongitude());
+        if (request.getTriggerRadius() != null)
+            poi.setTriggerRadius(request.getTriggerRadius());
+        if (request.getPriority() != null)
+            poi.setPriority(request.getPriority());
+        if (isAdmin && request.getIsActive() != null)
+            poi.setIsActive(request.getIsActive());
+        if (isAdmin && request.getOwnerId() != null)
+            poi.setOwnerId(request.getOwnerId());
 
         return mapToResponse(poiRepository.save(poi), null);
     }
@@ -166,10 +172,18 @@ public class PoiServiceImpl implements PoiService {
         poi.setStatus("APPROVED");
         poi.setIsActive(true);
         Poi saved = poiRepository.save(poi);
+
+        // Trigger translate + audio generation after approval.
+        // This runs on the same thread but failures must NOT rollback the approval —
+        // the POI is already persisted as APPROVED above.
         try {
             poiContentsService.translateAndGenerateForPoi(id);
         } catch (Exception e) {
-            throw new RuntimeException("POI approved but translate/audio failed: " + e.getMessage(), e);
+            // Log lỗi nhưng không throw — admin vẫn nhận được response thành công.
+            // Nguyên nhân phổ biến: chưa có nội dung tiếng Việt, hoặc TTS/translate service
+            // đang down.
+            System.err.println("[approvePoi] translate/audio failed for poiId=" + id
+                    + " — POI is still APPROVED. Error: " + e.getMessage());
         }
         return mapToResponse(saved, null);
     }
@@ -189,7 +203,7 @@ public class PoiServiceImpl implements PoiService {
         // Haversine formula
         double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
                 + Math.cos(lat1Rad) * Math.cos(lat2Rad)
-                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+                        * Math.sin(dLng / 2) * Math.sin(dLng / 2);
 
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
@@ -197,7 +211,8 @@ public class PoiServiceImpl implements PoiService {
     }
 
     // Helper class nội bộ để carry distance cùng với POI
-    private record PoiWithDistance(Poi poi, double distance) {}
+    private record PoiWithDistance(Poi poi, double distance) {
+    }
 
     // ─────────────────────────────────────────────────────
     // Helper: convert Poi entity → PoiResponse DTO
