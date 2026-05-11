@@ -55,6 +55,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/audio/**", "/img/**").permitAll()
                         // Session: public (khách vãng lai không cần đăng nhập)
                         .requestMatchers("/api/sessions/**").permitAll()
+                        // Payment: public (dành cho khách vãng lai thanh toán)
+                        .requestMatchers("/api/payments/**").permitAll()
                         // WebSockets
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/analytics/dashboard").hasRole("ADMIN")

@@ -40,6 +40,7 @@ public class TourServiceImpl implements TourService {
                 .isSystem(request.getIsSystem() != null ? request.getIsSystem() : true)
                 .createdBy(request.getCreatedBy())
                 .isActive(true)
+                .price(request.getPrice())  
                 .build();
 
         Tour saved = tourRepository.save(tour);
@@ -63,6 +64,8 @@ public class TourServiceImpl implements TourService {
         if (request.getIsActive() != null) {
             tour.setIsActive(request.getIsActive());
         }
+
+        tour.setPrice(request.getPrice());
 
         Tour saved = tourRepository.save(tour);
         if (request.getPois() != null) {
@@ -122,6 +125,7 @@ public class TourServiceImpl implements TourService {
                 .isActive(tour.getIsActive())
                 .createdAt(tour.getCreatedAt())
                 .updatedAt(tour.getUpdatedAt())
+                .price(tour.getPrice())
                 .pois(pois)
                 .build();
     }
@@ -155,6 +159,7 @@ public class TourServiceImpl implements TourService {
                 .isActive(tour.getIsActive())
                 .createdAt(tour.getCreatedAt())
                 .updatedAt(tour.getUpdatedAt())
+                .price(tour.getPrice())
                 .pois(pois)
                 .build();
     }

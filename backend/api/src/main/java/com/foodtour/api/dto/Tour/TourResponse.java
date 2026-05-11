@@ -2,6 +2,7 @@ package com.foodtour.api.dto.Tour;
 
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -21,6 +22,8 @@ public class TourResponse {
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    private BigDecimal price;
 
     private List<Tour_PoisResponse> pois;
 }

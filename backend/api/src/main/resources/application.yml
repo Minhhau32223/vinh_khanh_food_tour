@@ -37,3 +37,11 @@ cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME:djdrbgix5}
   api-key: ${CLOUDINARY_API_KEY:467375341443691}
   api-secret: ${CLOUDINARY_API_SECRET:0JWvXef1_6b80tQxVPTAVovXJFM}
+
+momo:
+  partner-code: MOMO
+  access-key: F8BBA842ECF85
+  secret-key: K951B6PE1waDMi640xX08PD3vg6EkVlz
+  endpoint: https://test-payment.momo.vn/v2/gateway/api/create
+  ipn-url: https://shakily-custodian-monorail.ngrok-free.dev/api/payments/momo/callback
+  redirect-url: https://shakily-custodian-monorail.ngrok-free.dev/payment/result

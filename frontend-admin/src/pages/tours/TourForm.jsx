@@ -29,7 +29,7 @@ export default function TourForm() {
   const isEdit = !!id;
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({ name: '', description: '', isSystem: true, isActive: true });
+  const [form, setForm] = useState({ name: '', description: '', isSystem: true, isActive: true, price: '' });
   const [orderedPois, setOrderedPois] = useState([]);
   const [allPois, setAllPois] = useState([]);
   const [addPoiId, setAddPoiId] = useState('');
@@ -42,12 +42,12 @@ export default function TourForm() {
   );
 
   useEffect(() => {
-    api.get('/pois').then(r => setAllPois(r.data)).catch(() => {});
+    api.get('/pois').then(r => setAllPois(r.data)).catch(() => { });
     if (isEdit) {
       setLoading(true);
       api.get(`/tours/${id}`)
         .then(({ data }) => {
-          setForm({ name: data.name, description: data.description || '', isSystem: data.system, isActive: data.active });
+          setForm({ name: data.name, description: data.description || '', isSystem: data.system, isActive: data.active, price: data.price || '' });
           if (data.pois) {
             setOrderedPois(data.pois.map(p => ({ poiId: p.poiId || p.id, poiName: p.poiName || p.name, orderIndex: p.orderIndex })));
           }
@@ -88,6 +88,7 @@ export default function TourForm() {
       description: form.description,
       isSystem: form.isSystem,
       isActive: form.isActive,
+      price: form.price === '' ? null : Number(form.price),
       pois: orderedPois.map(p => ({ poiId: p.poiId, orderIndex: p.orderIndex })),
     };
     try {
@@ -121,6 +122,18 @@ export default function TourForm() {
                   <textarea id="tour-desc" className="form-textarea" rows={4} value={form.description}
                     onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                     placeholder="Khám phá những địa điểm ẩm thực hấp dẫn…" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Giá Tour (VNĐ)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="form-input"
+                    value={form.price}
+                    onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+                    placeholder="Ví dụ: 199000"
+                  />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Loại tour</label>
@@ -170,8 +183,10 @@ export default function TourForm() {
                           <SortableItem item={item} />
                           <button type="button"
                             onClick={() => removePoi(item.poiId)}
-                            style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-                              background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-danger)' }}>
+                            style={{
+                              position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                              background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-danger)'
+                            }}>
                             ✕
                           </button>
                         </div>

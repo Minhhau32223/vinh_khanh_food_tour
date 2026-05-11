@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -57,4 +58,9 @@ public class Tour {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    // Giá tour
+    // Nullable để hỗ trợ tour miễn phí hoặc chưa cấu hình giá
+    @Column(name = "price", precision = 10, scale = 2, nullable = true)
+    private BigDecimal price;
 }

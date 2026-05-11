@@ -3,6 +3,7 @@ package com.foodtour.api.dto.Tour;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -16,6 +17,8 @@ public class UpdateTourRequest {
 
     private Boolean isSystem;
     private Boolean isActive;
+
+    private BigDecimal price;
 
     private List<TourPoiOrderRequest> pois;
 }

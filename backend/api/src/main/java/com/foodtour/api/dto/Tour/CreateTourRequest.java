@@ -3,7 +3,10 @@ package com.foodtour.api.dto.Tour;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.List;
+
+import com.google.type.Decimal;
 
 @Data
 public class CreateTourRequest {
@@ -16,6 +19,8 @@ public class CreateTourRequest {
     private Boolean isSystem = false;
 
     private Long createdBy;
+
+    private BigDecimal price;
 
     /** Thứ tự POI trong tour (order_index tăng dần). */
     private List<TourPoiOrderRequest> pois;

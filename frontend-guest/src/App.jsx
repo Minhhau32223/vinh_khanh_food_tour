@@ -7,6 +7,7 @@ import PoiDetail from './pages/PoiDetail';
 import QRPage from './pages/QRPage';
 import TourList from './pages/TourList';
 import Settings from './pages/Settings';
+import PaymentResult from './pages/PaymentResult';
 //chi tiết poi
 import { useNavigate } from 'react-router-dom';
 
@@ -248,6 +249,7 @@ function AppShell() {
           <Route path="/qr/:qrValue" element={<QRPage />} />
           <Route path="/tours" element={<TourList />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/payment/result" element={<PaymentResult />} />
         </Routes>
       </div>
 

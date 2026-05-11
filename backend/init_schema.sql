@@ -292,6 +292,30 @@ INSERT INTO `users` VALUES (1,'admin','$2a$10$/r.VBxGe4d1cEfJgcZHtzuX0zvd07WilwP
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
+ALTER TABLE tours ADD COLUMN price DECIMAL(10,2) DEFAULT 0.00;
+
+DROP TABLE IF EXISTS `payments`;
+CREATE TABLE `payments` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `session_id` varchar(36) NOT NULL,
+  `tour_id` bigint NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'PENDING',
+  `provider` varchar(20) NOT NULL,
+  `provider_tx_id` varchar(100) DEFAULT NULL,
+  `order_id` varchar(100) DEFAULT NULL,        -- ← thêm vào đây
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `session_id` (`session_id`),
+  KEY `tour_id` (`tour_id`),
+  CONSTRAINT `payments_fk_session` FOREIGN KEY (`session_id`) REFERENCES `sessions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `payments_fk_tour` FOREIGN KEY (`tour_id`) REFERENCES `tours` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+LOCK TABLES `payments` WRITE;
+UNLOCK TABLES;
+
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
